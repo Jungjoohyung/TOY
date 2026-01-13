@@ -3,7 +3,8 @@ spring:
     active: local
   
   datasource:
-    url: jdbc:mysql://localhost:3307/ticket_service?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Seoul
+    # 도커 MySQL 포트(3306)와 아까 만든 DB이름(ticket)으로 통일!
+    url: jdbc:mysql://localhost:3306/ticket_service?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -11,14 +12,15 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQL8Dialect
         use_sql_comments: true
+    show-sql: true
     open-in-view: false
   
+  # 레디스 설정도 살려둠 (도커에 redis도 떠있다면 정상 작동함)
   data:
     redis:
       host: localhost

@@ -1,41 +1,34 @@
-import org.gradle.api.plugins.JavaPluginExtension
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
 plugins {
     id("java")
-    id("org.springframework.boot") version "3.3.0" apply false
-    id("io.spring.dependency-management") version "1.1.5" apply false
+    id("org.springframework.boot") version "3.3.0"
+    id("io.spring.dependency-management") version "1.1.5"
 }
 
-allprojects {
-    group = "com.toy"
-    version = "0.0.1-SNAPSHOT"
+group = "com.toy"
+version = "0.0.1-SNAPSHOT"
 
-    repositories {
-        mavenCentral()
-    }
+repositories {
+    mavenCentral()
 }
 
-subprojects {
-    apply(plugin = "java")
-    apply(plugin = "org.springframework.boot")
-    apply(plugin = "io.spring.dependency-management")
+dependencies {
+    // 1. Core 모듈 연결
+    implementation(project(":core"))
 
-    // [이 부분이 핵심입니다!] java { } 대신 아래처럼 써야 에러가 안 납니다.
-    configure<JavaPluginExtension> {
-        toolchain {
-            languageVersion.set(JavaLanguageVersion.of(17))
-        }
-    }
+    // 2. 웹 기능
+    implementation("org.springframework.boot:spring-boot-starter-web")
 
-    dependencies {
-        implementation("org.springframework.boot:spring-boot-starter-web")
-        testImplementation("org.springframework.boot:spring-boot-starter-test")
-        compileOnly("org.projectlombok:lombok")
-        annotationProcessor("org.projectlombok:lombok")
-    }
+    // 3. JPA 기능 (★ 이 줄이 없어서 에러가 났던 겁니다!)
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
-    tasks.withType<Test> {
-        useJUnitPlatform()
-    }
+    // 4. 롬복
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+
+    // 5. 테스트
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
