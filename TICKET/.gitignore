@@ -35,5 +35,8 @@ db/init/
 /nbdist/
 /.nb-gradle/
 
+###coding test###
+Main.java
+
 ### Docker ###
 docker-compose.override.yml
