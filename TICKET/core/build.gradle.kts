@@ -24,6 +24,7 @@ dependencies {
 
     // 4. 테스트
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly ("org.junit.platform:junit-platform-launcher")
 }
 
 
@@ -39,4 +40,15 @@ tasks.jar {
     enabled = true
     // ★ 이거 중요: 'core-plain.jar'가 아니라 'core.jar'로 이름표를 예쁘게 붙여줌
     archiveClassifier.set("") 
+}
+
+tasks.withType<Test> {
+    testLogging {
+
+        // "System.out.println" 내용을 콘솔에 보여줘라!
+        showStandardStreams = true
+        
+        showStandardStreams = true // 숨겨진 로그(println)를 보여줘라!
+        events("passed", "skipped", "failed")
+    }
 }
