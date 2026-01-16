@@ -46,4 +46,8 @@ public class Seat {
         }
         this.isReserved = true;
     }
+    
+    public void release() {
+        this.isReserved = false;
+    }
 }

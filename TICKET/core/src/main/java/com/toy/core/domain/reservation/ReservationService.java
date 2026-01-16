@@ -4,6 +4,10 @@ import com.toy.core.domain.reservation.dto.ReservationRequest;
 import com.toy.core.domain.seat.Seat;
 import com.toy.core.domain.seat.SeatRepository;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,5 +36,25 @@ public class ReservationService {
 
         // 4. 저장 및 ID 반환
         return reservationRepository.save(reservation).getId();
+    }
+
+    @Transactional
+    public int cancelExpiredReservations() {
+        // 1. 기준 시간 설정 (지금으로부터 5분 전)
+        LocalDateTime cutOffTime = LocalDateTime.now().minusMinutes(5);
+
+        // 2. 5분 지난 대기 상태(PENDING) 예매들 조회
+        List<Reservation> expiredReservations = reservationRepository.findByStatusAndCreatedAtBefore(
+                ReservationStatus.PENDING, 
+                cutOffTime
+        );
+
+        // 3. 하나씩 취소 처리
+        for (Reservation reservation : expiredReservations) {
+            reservation.cancel();       // 예매 상태: CANCELLED
+            reservation.getSeat().release(); // 좌석 상태: isReserved = false (다시 구매 가능)
+        }
+        
+        return expiredReservations.size(); // 몇 개 지웠는지 반환 (로그용)
     }
 }

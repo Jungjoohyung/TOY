@@ -41,6 +41,7 @@ public class Reservation {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    
     @Builder
     public Reservation(Long userId, Seat seat) {
         this.userId = userId;
@@ -53,4 +54,9 @@ public class Reservation {
     public void cancel() {
         this.status = ReservationStatus.CANCELLED;
     }
+    public void completePayment() {
+        this.status = ReservationStatus.PAID;
+    }
+    
 }
+
