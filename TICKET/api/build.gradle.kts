@@ -29,7 +29,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     
     // 6. swagger (SpringDoc)
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 }
 
 tasks.test {

@@ -44,10 +44,9 @@ tasks.jar {
 
 tasks.withType<Test> {
     testLogging {
-
         // "System.out.println" 내용을 콘솔에 보여줘라!
         showStandardStreams = true
-        
+
         showStandardStreams = true // 숨겨진 로그(println)를 보여줘라!
         events("passed", "skipped", "failed")
     }
