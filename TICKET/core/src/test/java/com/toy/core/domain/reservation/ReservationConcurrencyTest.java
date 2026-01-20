@@ -56,7 +56,7 @@ class ReservationConcurrencyTest {
             executorService.submit(() -> {
                 try {
                     ReservationRequest request = new ReservationRequest(1L, seatId); // DTO 생성 (생성자 필요하거나 Setter 사용)
-                    reservationService.reserve(request);
+                    reservationService.reserve(request.getUserId(),request.getSeatId());
                     successCount.incrementAndGet(); // 성공하면 카운트 +1
                 } catch (Exception e) {
                     failCount.incrementAndGet();    // 실패(이미 예약됨)하면 카운트 +1

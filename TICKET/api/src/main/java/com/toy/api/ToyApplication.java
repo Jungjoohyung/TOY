@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(scanBasePackages = "com.toy") 
 @EntityScan("com.toy.core") // 엔티티(@Entity) 찾을 위치
 @EnableJpaRepositories("com.toy.core") // 레포지토리(Repository) 찾을 위치
-@EnableScheduling // 👈 ⭐ 이 줄을 꼭 추가해야 타이머가 작동합니다!
+@EnableScheduling //  타이머가 작동
 public class ToyApplication {
 
     public static void main(String[] args) {

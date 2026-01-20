@@ -6,7 +6,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class SeatRequest {
-    private Long performanceId; // 어느 공연의 좌석인지?
-    private String seatNumber;  // "A-1"
-    private int price;          // 150000
+    
+    // [변경] performanceId -> scheduleId
+    private Long scheduleId; 
+    
+    private String seatNumber; // A-1
+    private int price;         // 150000
 }

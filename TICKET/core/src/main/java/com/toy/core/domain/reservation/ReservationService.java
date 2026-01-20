@@ -18,23 +18,21 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final SeatRepository seatRepository;
 
-    @Transactional
-    public Long reserve(ReservationRequest request) {
-        // 1. 좌석 조회 (없으면 에러)
-        // [변경] 락을 걸면서 조회! (다른 트랜잭션은 여기서 대기 상태가 됨)
-        Seat seat = seatRepository.findByIdWithLock(request.getSeatId())
+    @Transactional // 트랜잭션 필수! (Lock 유지용)
+    public Long reserve(Long userId, Long seatId) {
+        // 1. 좌석 조회 (비관적 락 적용) - 동시성 제어의 핵심!
+        Seat seat = seatRepository.findByIdWithLock(seatId)
                 .orElseThrow(() -> new IllegalArgumentException("좌석을 찾을 수 없습니다."));
 
-        // 2. 좌석 점유 (이미 예약됐으면 여기서 에러 터짐 -> Seat.java의 reserve() 호출)
-        seat.reserve();
+        // 2. 이미 예약된 좌석인지 확인 (Seat 엔티티의 메서드 활용)
+        seat.reserve(); // 상태를 isReserved = true로 변경
 
-        // 3. 예매 생성
+        // 3. 예약 정보 저장
         Reservation reservation = Reservation.builder()
-                .userId(request.getUserId())
+                .userId(userId)
                 .seat(seat)
                 .build();
-
-        // 4. 저장 및 ID 반환
+        
         return reservationRepository.save(reservation).getId();
     }
 

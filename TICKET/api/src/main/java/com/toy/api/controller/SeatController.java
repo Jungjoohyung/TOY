@@ -1,7 +1,7 @@
 package com.toy.api.controller;
 
-import com.toy.core.domain.performance.Performance;
-import com.toy.core.domain.performance.PerformanceRepository;
+import com.toy.core.domain.performance.PerformanceSchedule;
+import com.toy.core.domain.performance.PerformanceScheduleRepository; // 👈 변경
 import com.toy.core.domain.seat.Seat;
 import com.toy.core.domain.seat.SeatRepository;
 import com.toy.core.domain.seat.dto.SeatRequest;
@@ -14,19 +14,22 @@ import org.springframework.web.bind.annotation.*;
 public class SeatController {
 
     private final SeatRepository seatRepository;
-    private final PerformanceRepository performanceRepository;
+    
+    // [변경] 공연 저장소가 아니라 '스케줄 저장소'가 필요함
+    private final PerformanceScheduleRepository scheduleRepository;
 
     @PostMapping
     public String createSeat(@RequestBody SeatRequest request) {
-        // 1. 공연 정보 찾기 (없으면 에러)
-        Performance performance = performanceRepository.findById(request.getPerformanceId())
-                .orElseThrow(() -> new IllegalArgumentException("공연을 찾을 수 없습니다."));
+        
+        // 1. 스케줄(회차) 정보 찾기 (없으면 에러)
+        PerformanceSchedule schedule = scheduleRepository.findById(request.getScheduleId())
+                .orElseThrow(() -> new IllegalArgumentException("스케줄을 찾을 수 없습니다."));
 
-        // 2. 좌석 만들기 (Builder 패턴 사용)
+        // 2. 좌석 만들기 (Builder 패턴)
         Seat seat = Seat.builder()
                 .seatNumber(request.getSeatNumber())
                 .price(request.getPrice())
-                .performance(performance) // 연관관계 설정
+                .schedule(schedule) // 👈 [핵심] performance 대신 schedule 주입
                 .build();
 
         // 3. 저장
