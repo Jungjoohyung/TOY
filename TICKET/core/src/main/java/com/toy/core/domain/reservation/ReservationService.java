@@ -1,6 +1,7 @@
 package com.toy.core.domain.reservation;
 
 import com.toy.core.domain.reservation.dto.ReservationRequest;
+import com.toy.core.domain.reservation.dto.ReservationResponse;
 import com.toy.core.domain.seat.Seat;
 import com.toy.core.domain.seat.SeatRepository;
 import lombok.RequiredArgsConstructor;
@@ -54,5 +55,12 @@ public class ReservationService {
         }
         
         return expiredReservations.size(); // 몇 개 지웠는지 반환 (로그용)
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReservationResponse> getMyReservations(Long userId) {
+        return reservationRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(ReservationResponse::new) // DTO로 변환
+                .toList();
     }
 }

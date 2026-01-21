@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReservationRequest {
-    private Long userId; // 누가
+    
     private Long seatId; // 어느 자리를
 }

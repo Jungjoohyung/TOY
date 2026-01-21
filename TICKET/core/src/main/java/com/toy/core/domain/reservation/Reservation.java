@@ -48,6 +48,7 @@ public class Reservation {
         this.seat = seat;
         this.price = seat.getPrice(); // 좌석 가격을 가져와서 박제
         this.status = ReservationStatus.PENDING; // 기본은 대기 상태
+        this.createdAt = LocalDateTime.now();
     }
 
     // 예매 취소 편의 메서드

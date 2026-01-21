@@ -19,6 +19,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @Modifying
     @Query("update Reservation r set r.createdAt = :date where r.id = :id")
     void updateCreatedAt(@Param("id") Long id, @Param("date") LocalDateTime date);
+   
+    List<Reservation> findByUserIdOrderByCreatedAtDesc(Long userId);
+    
 
 
 }
