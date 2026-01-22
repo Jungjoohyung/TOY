@@ -12,7 +12,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,4 +52,16 @@ public class ReservationController {
         // 2. 조회 및 반환
         return reservationService.getMyReservations(userId);
     }
+
+
+    @Operation(summary = "예매 취소", description = "예매를 취소하고 결제 금액을 환불받습니다.")
+    @DeleteMapping("/{reservationId}") // DELETE 메서드 사용
+    public String cancel(@PathVariable Long reservationId, HttpServletRequest servletRequest) {
+        Long userId = (Long) servletRequest.getAttribute("userId");
+        
+        reservationService.cancelReservation(userId, reservationId);
+        
+        return "취소 완료! 환불 처리되었습니다.";
+    }
+    
 }

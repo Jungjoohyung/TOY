@@ -14,6 +14,9 @@ public class Member {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    // 지갑 잔액
+    private long point;
 
     @Column(nullable = false, unique = true)
     private String email; // 로그인 ID 역할
@@ -33,5 +36,23 @@ public class Member {
         this.password = password;
         this.name = name;
         this.role = role;
+        this.point = 0L;
     }
+
+    //충전
+    public void charge(long amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("0원 이상만 충전 가능합니다.");
+        }
+        this.point += amount;
+    }
+
+    //결제
+    public void use(long amount) {
+        if (this.point < amount) {
+            throw new IllegalArgumentException("잔액이 부족합니다."); // 🚨 거지(Beggar) 방지 로직
+        }
+        this.point -= amount;
+    }
+
 }

@@ -58,6 +58,10 @@ public class Reservation {
     public void completePayment() {
         this.status = ReservationStatus.PAID;
     }
+    // 결제 완료 처리 (pedning -> paid))
+    public void confirm() {
+        this.status = ReservationStatus.PAID;
+    }
     
 }
 

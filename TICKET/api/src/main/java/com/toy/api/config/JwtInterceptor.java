@@ -26,16 +26,21 @@ public class JwtInterceptor implements HandlerInterceptor {
             throw new IllegalArgumentException("로그인이 필요합니다."); // 401이나 500 에러로 뜸
         }
 
-        // 3. "Bearer " 글자 떼고 순수 토큰만 추출
-        String token = header.substring(7);
 
-        // 4. 검증 (위조되거나 만료되면 여기서 에러 펑!)
-        Long userId = jwtUtil.getUserId(token);
+        // 3. "Bearer " 글자 떼고 순수 토큰만 추출(trim()으로 앞뒤 공백 제거)
+        String token = header.substring(7).trim();
 
-        // 5. 검증 통과! 요청 객체에 "이 사람은 누구다"라고 꼬리표 붙이기
-        request.setAttribute("userId", userId);
-        
-        log.info("✅ [인증 성공] 사용자 ID: {}", userId);
-        return true; // 통과!
+
+
+        try {
+            // 4. 검증 (위조되거나 만료되면 여기서 에러 펑!)
+            Long userId = jwtUtil.getUserId(token);
+            // 5. 검증 통과! 요청 객체에 "이 사람은 누구다"라고 꼬리표 붙이기
+            request.setAttribute("userId", userId);
+            log.info("✅ [인증 성공] 사용자 ID: {}", userId); //성공 로그
+            return true;//통과
+        } catch (Exception e) {
+            throw new IllegalArgumentException("유효하지 않은 토큰입니다."); // 실패 로그그
+        }
     }
 }

@@ -14,7 +14,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtInterceptor)
-                .addPathPatterns("/api/reservations/**") //  예약 API는 검문 필수!
+                .addPathPatterns("/api/reservations/**", "/api/points/**") //  예약 API는 검문 필수!
                 .excludePathPatterns("/api/auth/**", "/api/performances/**"); // 로그인, 공연 조회는 프리패스
     }
 }
