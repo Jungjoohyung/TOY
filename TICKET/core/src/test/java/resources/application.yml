@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    # Docker/로컬 MySQL 주소 (본인 설정에 맞게 수정)
+    url: jdbc:mysql://localhost:3306/ticket_service?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: root  #  본인이 설정한 비밀번호로 꼭 변경하세요! (예: 1234)
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # 테스트할 때 테이블 없으면 자동 생성
+    show-sql: true      # 쿼리 나가는 거 눈으로 확인
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    org.hibernate.SQL: debug
