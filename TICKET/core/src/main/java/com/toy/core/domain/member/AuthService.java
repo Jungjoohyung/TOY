@@ -29,4 +29,22 @@ public class AuthService {
         // 3. 토큰 발급! (ID 대신 토큰을 줌)
         return jwtUtil.createToken(member.getId(), member.getEmail());
     }
+
+    @Transactional
+    public Long signup(String email, String password, String name, MemberRole role) {
+        // 1. 이메일 중복 검사 (선택 사항)
+        if (memberRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        }
+
+        // 2. 회원 저장
+        Member member = Member.builder()
+                .email(email)
+                .password(password)
+                .name(name)
+                .role(role != null ? role : MemberRole.USER) // 역할 없으면 USER로
+                .build();
+
+        return memberRepository.save(member).getId();
+    }
 }
