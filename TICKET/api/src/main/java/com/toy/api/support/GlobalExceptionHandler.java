@@ -1,14 +1,35 @@
-package com.toy.api.controller;
+package com.toy.api.support;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+
+    // @Valid 검증 실패 시 (400 Bad Request)
+    // "이메일 형식이 아닙니다", "비밀번호는 8자 이상" 같은 메시지를 JSON으로 예쁘게 줍니다.
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        log.warn("🚨 [입력값 검증 실패] 잘못된 데이터가 들어왔습니다.");
+        
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+            errors.put(error.getField(), error.getDefaultMessage())
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errors);
+    }
 
     // 1. [기존] 비즈니스 에러 (예: 이미 예약된 좌석) -> 409 Conflict
     @ExceptionHandler(IllegalStateException.class)

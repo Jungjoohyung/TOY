@@ -5,6 +5,11 @@ spring:
     username: root
     password: root  #  본인이 설정한 비밀번호로 꼭 변경하세요! (예: 1234)
     driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
   jpa:
     hibernate:

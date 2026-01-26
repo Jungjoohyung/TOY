@@ -7,6 +7,8 @@ import com.toy.api.controller.dto.SignupRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,7 +28,7 @@ public class AuthController {
     // 회원가입 API
     @Operation(summary = "회원가입", description = "이메일, 비밀번호, 이름으로 가입합니다.")
     @PostMapping("/signup")
-    public String signup(@RequestBody SignupRequest request) {
+    public String signup(@RequestBody @Valid SignupRequest request) {
         Long memberId = authService.signup(
             request.getEmail(), 
             request.getPassword(), 

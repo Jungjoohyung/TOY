@@ -30,6 +30,15 @@ dependencies {
     
     // 6. swagger (SpringDoc)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+
+    // 7. 입력값 검등용 
+    implementation ("org.springframework.boot:spring-boot-starter-validation")
+
+    // 8. redis 
+    implementation ("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation ("org.redisson:redisson-spring-boot-starter:3.25.2")
+
+    
 }
 
 tasks.test {

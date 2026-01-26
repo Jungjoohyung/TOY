@@ -4,9 +4,10 @@ import com.toy.core.domain.performance.Concert;
 import com.toy.core.domain.performance.Performance;
 import com.toy.core.domain.performance.Sports;
 import lombok.Getter;
+import java.io.Serializable;
 
 @Getter
-public class PerformanceResponse {
+public class PerformanceResponse implements Serializable{
 
     private Long id;
     private String type;  // "CONCERT" or "SPORTS"

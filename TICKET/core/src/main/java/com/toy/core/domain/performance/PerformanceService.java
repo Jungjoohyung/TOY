@@ -6,6 +6,7 @@ import com.toy.core.domain.performance.dto.PerformanceDetailResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,8 +18,11 @@ public class PerformanceService {
 
     private final PerformanceRepository performanceRepository;
     private final PerformanceScheduleRepository scheduleRepository;
+    
 
     // 1. 공연 전체 목록 조회
+    @Cacheable(value = "performances", key = "'all'", cacheManager = "cacheManager") 
+    @Transactional(readOnly = true)
     public List<PerformanceResponse> getAllPerformances() {
         return performanceRepository.findAll().stream()
                 .map(PerformanceResponse::new) // Entity -> DTO 변환
