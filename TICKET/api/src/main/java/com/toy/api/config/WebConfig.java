@@ -11,14 +11,22 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final JwtInterceptor jwtInterceptor;
+    private final QueueInterceptor queueInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtInterceptor)
-                .addPathPatterns("/api/reservations/**", "/api/points/**") //  예약 API는 검문 필수!
-                .excludePathPatterns("/api/auth/**", "/api/performances/**"); // 로그인, 공연 조회는 프리패스
+                // 👇 [수정] 여기에 "/api/queue/**"를 추가해주세요!
+                .order(1)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/auth/**", "/api/performances/**");
+        // 2. 👇 [추가] 대기열 검문소 (예약 API만 지킴)
+        registry.addInterceptor(queueInterceptor)
+                .order(2) // 👈 순서 2번 (로그인 검사 끝나면 실행)
+                .addPathPatterns("/api/reservations/**"); // 예약할 때만 검사!
+
     }
-    
+
     // [추가] CORS 설정 (프론트엔드 연동용용)
     @Override
     public void addCorsMappings(CorsRegistry registry) {
