@@ -59,7 +59,7 @@ public class QueueRepository {
         redisTemplate.opsForValue().set(key, "true", 5, TimeUnit.MINUTES);
     }
 
-    // 👇 [추가] 검문 (출입증 있니?)
+    //  검문 (출입증 있니?)
     public boolean isAllowed(Long userId) {
         String key = "active:user:" + userId;
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));

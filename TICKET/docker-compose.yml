@@ -46,7 +46,7 @@ services:
     image: redis/redisinsight:latest
     container_name: ticket-redisinsight
     ports:
-      - "8001:8001"
+      - "8001:5540"
     volumes:
       - redisinsight-data:/data
     networks:
