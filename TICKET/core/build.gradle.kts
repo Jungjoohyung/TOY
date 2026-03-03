@@ -25,6 +25,9 @@ dependencies {
     // 4. 테스트
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly ("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("com.h2database:h2")
+    testCompileOnly("org.projectlombok:lombok")
+    testAnnotationProcessor("org.projectlombok:lombok")
     
     //5. JWT (로그인 토큰용)
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")

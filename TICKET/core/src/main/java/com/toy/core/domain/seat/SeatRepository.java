@@ -17,4 +17,8 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
     @Query("select s from Seat s where s.id = :id")
     Optional<Seat> findByIdWithLock(@Param("id") Long id);
 
+    // 🔒 낙관적 락(읽기 락)을 걸어서 조회
+    @Lock(LockModeType.OPTIMISTIC)
+    @Query("select s from Seat s where s.id = :id")
+    Optional<Seat> findByIdWithOptimisticLock(@Param("id") Long id);
 }

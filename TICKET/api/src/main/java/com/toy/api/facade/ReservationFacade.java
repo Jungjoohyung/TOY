@@ -35,27 +35,46 @@ public class ReservationFacade {
         String lockName = "lock:seat:" + seatId;
         RLock lock = redissonClient.getLock(lockName);
 
-        try {
-            // 2. 락 획득 시도 (최대 5초 기다리고, 잡으면 3초 뒤에 자동으로 놓음)
-            // tryLock(대기시간, 점유시간, 시간단위)
-            boolean available = lock.tryLock(5, 3, TimeUnit.SECONDS);
+        int maxRetries = 3;
+        int currentRetry = 0;
 
-            if (!available) {
-                log.warn("⏳ 락 획득 실패 (누가 이미 예매 중): seatId={}", seatId);
-                throw new IllegalStateException("지금 접속자가 많아 예매가 지연되고 있습니다. 다시 시도해주세요.");
-            }
+        while (currentRetry < maxRetries) {
+            try {
+                // 2. 락 획득 시도 (최대 5초 기다리고, 잡으면 3초 뒤에 자동으로 놓음)
+                boolean available = lock.tryLock(5, 3, TimeUnit.SECONDS);
 
-            // 3. 락 잡았으니 안전하게 예매 진행! (Service 호출)
-            return reservationService.reserve(userId, seatId);
+                if (!available) {
+                    log.warn("⏳ 락 획득 실패 (누가 이미 예매 중): seatId={}", seatId);
+                    throw new IllegalStateException("지금 접속자가 많아 예매가 지연되고 있습니다. 다시 시도해주세요.");
+                }
 
-        } catch (InterruptedException e) {
-            throw new RuntimeException("서버 에러가 발생했습니다.", e);
-        } finally {
-            // 4. 볼일 다 봤으면 락 해제 (중요!)
-            if (lock.isHeldByCurrentThread()) {
-                lock.unlock();
+                // 3. 락 잡았으니 안전하게 예매 진행! (Service 호출)
+                return reservationService.reserve(userId, seatId);
+
+            } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
+                currentRetry++;
+                log.warn("낙관적 락 충돌 발생! 재시도 중... (시도 횟수: {}/{}) seatId={}", currentRetry, maxRetries, seatId);
+                if (currentRetry >= maxRetries) {
+                    throw new IllegalStateException("동시 예매가 너무 많아 실패했습니다. 다시 시도해주세요.", e);
+                }
+                try {
+                    // 잠시 대기 후 재시도
+                    Thread.sleep(50);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("예매 중단됨", ie);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("서버 에러가 발생했습니다.", e);
+            } finally {
+                // 4. 볼일 다 봤으면 락 해제 (중요!)
+                if (lock.isHeldByCurrentThread()) {
+                    lock.unlock();
+                }
             }
         }
+        throw new IllegalStateException("예매 처리 중 오류가 발생했습니다.");
     }
 
     /**

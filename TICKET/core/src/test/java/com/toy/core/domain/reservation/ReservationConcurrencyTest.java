@@ -23,14 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(properties = {
-    "spring.datasource.url=jdbc:mysql://localhost:3306/ticket_service?serverTimezone=Asia/Seoul&characterEncoding=UTF-8",
-    "spring.datasource.username=root",
-    "spring.datasource.password=root",  // 👈 [중요] 본인 DB 비밀번호로 변경!
-    "spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver",
-    "spring.jpa.hibernate.ddl-auto=update",
-    "spring.jpa.show-sql=true"
-})
+@SpringBootTest
 class ReservationConcurrencyTest {
 
     @Autowired private ReservationService reservationService;
