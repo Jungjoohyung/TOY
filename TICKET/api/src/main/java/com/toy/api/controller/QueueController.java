@@ -29,7 +29,7 @@ public class QueueController {
             throw new AuthorizationException("로그인이 필요한 서비스입니다.");
         }
         queueService.addQueue(userId);
-        return ApiResponse.ok("대기열 등록 완료! (순번을 계속 확인해주세요)");
+        return ApiResponse.success("대기열 등록 완료! (순번을 계속 확인해주세요)");
     }
 
     @Operation(summary = "내 순번 확인 (Polling)", description = "현재 내가 몇 번째인지 확인합니다. (0이면 입장 가능)")

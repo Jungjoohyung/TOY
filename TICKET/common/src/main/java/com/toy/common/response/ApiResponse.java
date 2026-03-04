@@ -30,8 +30,8 @@ public class ApiResponse<T> {
         return new ApiResponse<>(200, message, data);
     }
 
-    // 데이터 없는 성공 응답 (생성/삭제 완료 메시지 등)
-    public static ApiResponse<Void> ok(String message) {
+    // 데이터 없는 성공 응답 (생성/삭제 완료 메시지 등) — ok(String)과의 제네릭 모호성 방지를 위해 success 사용
+    public static ApiResponse<Void> success(String message) {
         return new ApiResponse<>(200, message, null);
     }
 

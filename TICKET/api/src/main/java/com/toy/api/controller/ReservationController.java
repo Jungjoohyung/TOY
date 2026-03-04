@@ -44,6 +44,6 @@ public class ReservationController {
     public ApiResponse<Void> cancel(@PathVariable Long reservationId, HttpServletRequest servletRequest) {
         Long userId = (Long) servletRequest.getAttribute("userId");
         reservationFacade.cancelTicket(userId, reservationId);
-        return ApiResponse.ok("취소 완료. 환불 처리되었습니다.");
+        return ApiResponse.success("취소 완료. 환불 처리되었습니다.");
     }
 }

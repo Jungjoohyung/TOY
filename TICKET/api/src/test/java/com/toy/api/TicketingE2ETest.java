@@ -125,7 +125,7 @@ public class TicketingE2ETest {
         String queueToken = "dummy-queue-token";
 
         // [4] 포인트 충전 → ApiResponse.data 에서 잔액 추출
-        Long balance = given()
+        long balance = given()
             .header("Authorization", "Bearer " + token)
             .contentType(ContentType.JSON)
             .body(new ChargeRequest(200000))
@@ -133,7 +133,7 @@ public class TicketingE2ETest {
             .post("/api/points/charge")
         .then()
             .statusCode(200)
-            .extract().path("data");
+            .extract().jsonPath().getLong("data");
 
         assertThat(balance).isEqualTo(200000L);
 
