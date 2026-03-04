@@ -12,11 +12,18 @@ import org.redisson.api.RedissonClient;
 
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 예약 유즈케이스 오케스트레이터.
+ * 흐름: (대기열 검증은 QueueInterceptor에서 완료) → Redis 분산 락 획득 → 좌석 선점 → 락 해제
+ *
+ * 트랜잭션 경계: Facade는 트랜잭션을 직접 소유하지 않음.
+ * DB 트랜잭션은 ReservationService 각 메서드가 소유 (@Transactional).
+ * Redis 분산 락은 트랜잭션 외부에서 제어하여 락 점유 시간 최소화.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -25,6 +32,10 @@ public class ReservationFacade {
     private final ReservationService reservationService;
     private final RedissonClient redissonClient;
 
+    /**
+     * 좌석 예매: Redis 분산 락으로 동시 접근 직렬화 후 DB 비관적 락으로 선점.
+     * 낙관적 락 충돌 시 최대 3회 재시도.
+     */
     public Long reserveTicket(Long userId, Long seatId) {
         String lockName = "lock:seat:" + seatId;
         RLock lock = redissonClient.getLock(lockName);
@@ -41,6 +52,7 @@ public class ReservationFacade {
                     throw new BusinessException("지금 접속자가 많아 예매가 지연되고 있습니다. 다시 시도해주세요.");
                 }
 
+                // 좌석 선점 (DB 비관적 락 + PENDING 예약 생성)
                 return reservationService.reserve(userId, seatId);
 
             } catch (ObjectOptimisticLockingFailureException e) {
@@ -67,12 +79,12 @@ public class ReservationFacade {
         throw new BusinessException("예매 처리 중 오류가 발생했습니다.");
     }
 
-    @Transactional
+    // 트랜잭션은 ReservationService.cancelReservation()이 소유
     public void cancelTicket(Long userId, Long reservationId) {
         reservationService.cancelReservation(userId, reservationId);
     }
 
-    @Transactional(readOnly = true)
+    // 트랜잭션은 ReservationService.getMyReservations()이 소유 (readOnly)
     public List<ReservationResponse> getHistory(Long userId) {
         return reservationService.getMyReservations(userId);
     }

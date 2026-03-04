@@ -25,6 +25,10 @@ public class ReservationService {
     private final SeatRepository seatRepository;
     private final MemberRepository memberRepository;
 
+    /**
+     * 좌석 선점: 비관적 락으로 좌석을 잠그고 PENDING 예약 생성.
+     * 포인트 차감은 결제(PaymentService)에서 수행.
+     */
     @Transactional
     public Long reserve(Long userId, Long seatId) {
         Seat seat = seatRepository.findByIdWithLock(seatId)
@@ -34,24 +38,19 @@ public class ReservationService {
             throw new BusinessException("이미 예약된 좌석입니다.");
         }
 
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 회원입니다."));
-
-        member.use(seat.getPrice());
-
         Reservation reservation = Reservation.builder()
                 .userId(userId)
                 .seat(seat)
                 .build();
 
-        reservation.confirm();
         seat.reserve();
-
-        reservationRepository.save(reservation);
 
         return reservationRepository.save(reservation).getId();
     }
 
+    /**
+     * 예약 취소: PAID 상태인 경우에만 포인트 환불.
+     */
     @Transactional
     public void cancelReservation(Long userId, Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -65,15 +64,20 @@ public class ReservationService {
             throw new BusinessException("이미 취소된 예약입니다.");
         }
 
-        Member member = memberRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("회원 정보가 없습니다."));
-
-        member.charge(reservation.getSeat().getPrice());
+        // 결제가 완료된 경우에만 포인트 환불
+        if (reservation.getStatus() == ReservationStatus.PAID) {
+            Member member = memberRepository.findById(userId)
+                    .orElseThrow(() -> new EntityNotFoundException("회원 정보가 없습니다."));
+            member.charge(reservation.getPrice());
+        }
 
         reservation.cancel();
         reservation.getSeat().release();
     }
 
+    /**
+     * 만료된 PENDING 예약 일괄 취소 (결제 없이 만료된 경우 환불 불필요).
+     */
     @Transactional
     public int cancelExpiredReservations() {
         LocalDateTime cutOffTime = LocalDateTime.now().minusMinutes(5);
