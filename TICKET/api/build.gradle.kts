@@ -46,6 +46,10 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-mysql")     // MySQL 8+ 지원
     runtimeOnly("com.mysql:mysql-connector-j")      // Flyway 실행 시 직접 필요
+
+    // 10. ShedLock (분산 스케줄러 중복 실행 방지)
+    implementation("net.javacrumbs.shedlock:shedlock-spring:5.14.0")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-redis-spring:5.14.0")
 }
 
 tasks.test {

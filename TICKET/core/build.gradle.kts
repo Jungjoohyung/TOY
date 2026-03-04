@@ -44,6 +44,10 @@ dependencies {
     //7. Flyway (스키마 버전 관리 — api 모듈에서 실행, core는 의존성만 선언)
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-mysql")
+
+    //8. ShedLock (분산 스케줄러 중복 실행 방지 — api 모듈에서 실행, core는 의존성만 선언)
+    implementation("net.javacrumbs.shedlock:shedlock-spring:5.14.0")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-redis-spring:5.14.0")
 }
 
 

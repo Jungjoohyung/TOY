@@ -5,6 +5,8 @@ import com.toy.core.domain.queue.QueueRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -27,6 +29,7 @@ public class QueueScheduler {
     private long batchSize;
 
     @Scheduled(fixedDelay = 1000)
+    @SchedulerLock(name = "queue_activation_lock", lockAtMostFor = "50s", lockAtLeastFor = "10s")
     public void enterUsers() {
         Set<Object> enteredUsers = queueRepository.popMin(batchSize);
 
