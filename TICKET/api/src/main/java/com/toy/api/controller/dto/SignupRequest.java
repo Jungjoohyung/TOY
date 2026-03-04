@@ -7,8 +7,11 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import lombok.AllArgsConstructor;
+
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class SignupRequest {
 
     @NotBlank(message = "이메일은 필수입니다.")
