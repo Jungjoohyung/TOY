@@ -15,6 +15,9 @@ dependencies {
     // 1. Core 모듈 연결
     implementation(project(":core"))
 
+    // 2. Common 모듈 연결 (ApiResponse, 공통 예외)
+    implementation(project(":common"))
+
     // 2. 웹 기능
     implementation("org.springframework.boot:spring-boot-starter-web")
 

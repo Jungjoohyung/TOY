@@ -1,8 +1,9 @@
 package com.toy.api.controller;
 
 import com.toy.api.controller.dto.LoginRequest;
-import com.toy.core.domain.member.AuthService;
 import com.toy.api.controller.dto.SignupRequest;
+import com.toy.common.response.ApiResponse;
+import com.toy.core.domain.member.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,28 +25,22 @@ public class AuthController {
 
     private final AuthService authService;
 
-
-    // 회원가입 API
     @Operation(summary = "회원가입", description = "이메일, 비밀번호, 이름으로 가입합니다.")
     @PostMapping("/signup")
-    public String signup(@RequestBody @Valid SignupRequest request) {
+    public ApiResponse<Long> signup(@RequestBody @Valid SignupRequest request) {
         Long memberId = authService.signup(
-            request.getEmail(), 
-            request.getPassword(), 
-            request.getName(), 
-            request.getRole()
+                request.getEmail(),
+                request.getPassword(),
+                request.getName(),
+                request.getRole()
         );
-        return "회원가입 성공! ID: " + memberId;
+        return ApiResponse.ok("회원가입 성공", memberId);
     }
 
-    // 로그인 API
     @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인합니다.")
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest request) {
+    public ApiResponse<String> login(@RequestBody LoginRequest request) {
         String token = authService.login(request.getEmail(), request.getPassword());
-        
-        // 원래는 여기서 JWT 토큰을 줘야 하는데, 
-        // 일단 데이터가 잘 들어갔는지 확인하기 위해 ID를 문자열로 줍니다.
-        return "로그인 성공! 회원 ID: " + token;
+        return ApiResponse.ok("로그인 성공", token);
     }
 }

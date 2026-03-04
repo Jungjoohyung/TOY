@@ -1,72 +1,57 @@
 package com.toy.api.support;
 
+import com.toy.common.exception.BaseException;
+import com.toy.common.response.ApiResponse;
+
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * 커스텀 예외 (BaseException 하위 전부):
+     * EntityNotFoundException(404), AuthorizationException(401),
+     * ForbiddenException(403), BusinessException(409)
+     */
+    @ExceptionHandler(BaseException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBaseException(BaseException e) {
+        log.warn("[{}] {}", e.getClass().getSimpleName(), e.getMessage());
+        return ResponseEntity
+                .status(e.getHttpStatus())
+                .body(ApiResponse.error(e.getHttpStatus(), e.getMessage()));
+    }
 
-    // @Valid 검증 실패 시 (400 Bad Request)
-    // "이메일 형식이 아닙니다", "비밀번호는 8자 이상" 같은 메시지를 JSON으로 예쁘게 줍니다.
+    /**
+     * @Valid 검증 실패 → 400 Bad Request
+     * 필드별 에러 메시지를 콤마로 합쳐서 응답
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        log.warn("🚨 [입력값 검증 실패] 잘못된 데이터가 들어왔습니다.");
-        
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error -> 
-            errors.put(error.getField(), error.getDefaultMessage())
-        );
-
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
+        log.warn("[ValidationError] {}", e.getMessage());
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining(", "));
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(errors);
+                .status(400)
+                .body(ApiResponse.error(400, message));
     }
 
-    // 1. [기존] 비즈니스 에러 (예: 이미 예약된 좌석) -> 409 Conflict
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException e) {
-        log.warn("⚠️ [예약 거절] {}", e.getMessage());
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(new ErrorResponse(e.getMessage()));
-    }
-
-    // 👇 [여기 추가함!] 2. 인증 실패 및 잘못된 요청 (예: 토큰 없음, 비번 틀림) -> 401 Unauthorized
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException e) {
-        
-        // 이것도 시스템 에러가 아니므로 WARN 레벨
-        log.warn("🚨 [요청 거절] {}", e.getMessage());
-
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED) // 401 반환
-                .body(new ErrorResponse(e.getMessage()));
-    }
-
-    // 3. [기존] 예측 못한 시스템 에러 (NPE 등) -> 500 Internal Server Error
+    /**
+     * 예상치 못한 서버 에러 → 500
+     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleException(Exception e) {
-        log.error("🚨 [긴급 장애] 예측 못한 에러 발생!", e);
+    public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
+        log.error("[ServerError] 예측 못한 에러 발생!", e);
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("서버에 문제가 생겼습니다. 관리자에게 문의하세요."));
-    }
-
-    // 에러 응답용 DTO
-    public static class ErrorResponse {
-        public String message;
-
-        public ErrorResponse(String message) {
-            this.message = message;
-        }
+                .status(500)
+                .body(ApiResponse.error(500, "서버에 문제가 생겼습니다. 관리자에게 문의하세요."));
     }
 }

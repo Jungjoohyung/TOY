@@ -12,6 +12,9 @@ repositories {
 }
 
 dependencies {
+    // 0. Common 모듈 연결 (공통 예외 클래스)
+    implementation(project(":common"))
+
     // 1. JPA (자바 객체랑 DB 테이블 연결)
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 

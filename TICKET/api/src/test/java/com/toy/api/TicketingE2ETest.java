@@ -53,14 +53,12 @@ public class TicketingE2ETest {
     public void setup() {
         RestAssured.port = port;
 
-        // DB 정리
         reservationRepository.deleteAllInBatch();
         seatRepository.deleteAllInBatch();
         scheduleRepository.deleteAllInBatch();
         performanceRepository.deleteAllInBatch();
         memberRepository.deleteAllInBatch();
 
-        // 1. 공연 및 스케줄, 좌석 세팅
         Concert concert = Concert.builder()
                 .title("아이유 10주년 콘서트")
                 .artist("아이유")
@@ -97,68 +95,57 @@ public class TicketingE2ETest {
         .then()
             .statusCode(200);
 
-        // [2] 로그인 -> JWT 토큰(회원 ID 문자열 형태) 획득
-        LoginRequest loginRequest = new LoginRequest("testuser@gmail.com", "password123");
-        String loginResponse = given()
+        // [2] 로그인 → ApiResponse.data 에서 JWT 토큰 추출
+        String token = given()
             .contentType(ContentType.JSON)
-            .body(loginRequest)
+            .body(new LoginRequest("testuser@gmail.com", "password123"))
         .when()
             .post("/api/auth/login")
         .then()
             .statusCode(200)
-            .extract().asString(); 
+            .extract().path("data");
 
-        // 응답: "로그인 성공! 회원 ID: {token}"
-        String token = loginResponse.replaceAll("[^0-9a-zA-Z\\-._]", ""); 
-        // 실제 프로젝트에선 JWT 토큰이 발급됨. 여기서는 응답 텍스트를 파싱해서 처리
-        if (loginResponse.contains("ID: ")) {
-            token = loginResponse.substring(loginResponse.indexOf("ID: ") + 4).trim();
-        }
         assertThat(token).isNotBlank();
 
-        // [3] 대기열 진입 토큰 발급
-        String queueResponse = given()
+        // [3] 대기열 진입
+        String queueMessage = given()
             .header("Authorization", "Bearer " + token)
         .when()
             .post("/api/queue")
         .then()
             .statusCode(200)
-            .extract().asString();
+            .extract().path("message");
 
-        assertThat(queueResponse).contains("대기열 등록 완료");
-        
-        // 🚨 큐 강제 활성화 (테스트를 위해)
+        assertThat(queueMessage).contains("대기열 등록 완료");
+
+        // 큐 강제 활성화 (테스트용)
         Long userId = jwtUtil.getUserId(token);
         queueRepository.activate(userId);
-        
-        // 큐 토큰은 Interceptor에서 Auth 헤더의 userId로 활성화 여부를 검색하므로
-        // 더ਮੀ 값이라도 Queue-Token 헤더가 들어가 있어야 합니다. (헤더 유무 검사)
+
         String queueToken = "dummy-queue-token";
 
-        // [4] 보유 포인트 충전
-        ChargeRequest chargeRequest = new ChargeRequest(200000); // 20만원 충전
-        String chargeResponse = given()
+        // [4] 포인트 충전 → ApiResponse.data 에서 잔액 추출
+        Long balance = given()
             .header("Authorization", "Bearer " + token)
             .contentType(ContentType.JSON)
-            .body(chargeRequest)
+            .body(new ChargeRequest(200000))
         .when()
             .post("/api/points/charge")
         .then()
             .statusCode(200)
-            .extract().asString();
-            
-        assertThat(chargeResponse).contains("200000");
+            .extract().path("data");
 
-        // [5] 예약 진행 (결제 포함)
+        assertThat(balance).isEqualTo(200000L);
+
+        // [5] 예약 진행
         ReservationRequest reservationRequest = new ReservationRequest();
-        // 리플렉션을 사용해 은닉된 필드 세팅 (단순 테스트용)
         try {
             java.lang.reflect.Field field = ReservationRequest.class.getDeclaredField("seatId");
             field.setAccessible(true);
             field.set(reservationRequest, seatId);
         } catch (Exception e) {}
 
-        String reserveResponse = given()
+        String reserveMessage = given()
             .header("Authorization", "Bearer " + token)
             .header("Queue-Token", queueToken)
             .contentType(ContentType.JSON)
@@ -167,11 +154,11 @@ public class TicketingE2ETest {
             .post("/api/reservations")
         .then()
             .statusCode(200)
-            .extract().asString();
+            .extract().path("message");
 
-        assertThat(reserveResponse).contains("예매 성공");
+        assertThat(reserveMessage).contains("예매 성공");
 
-        // [6] 예약 내역 조회 검증 (여기서는 JSON 배열 리턴됨)
+        // [6] 예약 내역 조회 → ApiResponse.data 배열에서 확인
         given()
             .header("Authorization", "Bearer " + token)
             .header("Queue-Token", queueToken)
@@ -179,10 +166,8 @@ public class TicketingE2ETest {
             .get("/api/reservations")
         .then()
             .statusCode(200)
-            .body("size()", is(1))
-            .body("[0].seatNumber", equalTo("VIP-1"));
-        
-        // [7] 잔액 차감 확인 (20만 - 15만 = 5만) /point/balance가 없으므로 생략
+            .body("data.size()", is(1))
+            .body("data[0].seatNumber", equalTo("VIP-1"));
     }
 
     @Test
@@ -192,26 +177,31 @@ public class TicketingE2ETest {
         java.util.concurrent.ExecutorService executorService = java.util.concurrent.Executors.newFixedThreadPool(threadCount);
         java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(threadCount);
 
-        // 1. 10명의 유저 생성 및 로그인, 큐 통과
         String[] tokens = new String[threadCount];
         for (int i = 0; i < threadCount; i++) {
             String email = "concurrent" + i + "@gmail.com";
             SignupRequest signupRequest = new SignupRequest(email, "password", "테스터" + i, com.toy.core.domain.member.MemberRole.USER);
             given().contentType(ContentType.JSON).body(signupRequest).post("/api/auth/signup");
 
-            String loginResp = given().contentType(ContentType.JSON).body(new LoginRequest(email, "password")).post("/api/auth/login").asString();
-            String token = loginResp.substring(loginResp.indexOf("ID: ") + 4).trim();
+            // ApiResponse.data 에서 JWT 토큰 추출
+            String token = given()
+                .contentType(ContentType.JSON)
+                .body(new LoginRequest(email, "password"))
+            .when()
+                .post("/api/auth/login")
+            .then()
+                .extract().path("data");
+
             tokens[i] = token;
 
-            // 큐 강제 통과
             queueRepository.activate(jwtUtil.getUserId(token));
-            
-            // 포인트 충전
-            ChargeRequest chargeRequest = new ChargeRequest(200000);
-            given().header("Authorization", "Bearer " + token).contentType(ContentType.JSON).body(chargeRequest).post("/api/points/charge");
+
+            given().header("Authorization", "Bearer " + token)
+                .contentType(ContentType.JSON)
+                .body(new ChargeRequest(200000))
+                .post("/api/points/charge");
         }
 
-        // 2. 동시 예매 시작
         java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger();
         java.util.concurrent.atomic.AtomicInteger failCount = new java.util.concurrent.atomic.AtomicInteger();
 
@@ -247,7 +237,6 @@ public class TicketingE2ETest {
         latch.await();
         executorService.shutdown();
 
-        // 3. 1명만 성공하고 9명은 실패해야 함 (400 or 409 등)
         assertThat(successCount.get()).isEqualTo(1);
         assertThat(failCount.get()).isEqualTo(9);
     }
@@ -260,7 +249,6 @@ public class TicketingE2ETest {
         field.setAccessible(true);
         field.set(req, seatId);
 
-        // JWT (Authorization) 헤더 없이 요청
         given()
             .header("Queue-Token", "dummy")
             .contentType(ContentType.JSON)
@@ -268,27 +256,31 @@ public class TicketingE2ETest {
         .when()
             .post("/api/reservations")
         .then()
-            .statusCode(not(200)); // 400, 401, 500 중 하나
+            .statusCode(not(200));
     }
 
     @Test
     @DisplayName("🚨 예외 테스트: 대기열(Queue) 통과(Active) 없이 예약 접근 시 실패해야 한다.")
     public void queueTokenNotActivatedTest() throws Exception {
-        // [1] 가입 및 로그인
         SignupRequest signupRequest = new SignupRequest("invalidQueue@gmail.com", "password123", "테스터", com.toy.core.domain.member.MemberRole.USER);
         given().contentType(ContentType.JSON).body(signupRequest).post("/api/auth/signup");
 
-        String loginResp = given().contentType(ContentType.JSON).body(new LoginRequest("invalidQueue@gmail.com", "password123")).post("/api/auth/login").asString();
-        String token = loginResp.substring(loginResp.indexOf("ID: ") + 4).trim();
+        // ApiResponse.data 에서 JWT 토큰 추출
+        String token = given()
+            .contentType(ContentType.JSON)
+            .body(new LoginRequest("invalidQueue@gmail.com", "password123"))
+        .when()
+            .post("/api/auth/login")
+        .then()
+            .extract().path("data");
 
-        // 🚨 큐 활성화를 하지 않음 (queueRepository.activate 호출 안 함)
+        // 큐 활성화 없음
 
         ReservationRequest req = new ReservationRequest();
         java.lang.reflect.Field field = ReservationRequest.class.getDeclaredField("seatId");
         field.setAccessible(true);
         field.set(req, seatId);
 
-        // JWT 토큰은 있지만 큐 액티브 토큰이 없는 상태
         given()
             .header("Authorization", "Bearer " + token)
             .header("Queue-Token", "dummy")
@@ -297,6 +289,6 @@ public class TicketingE2ETest {
         .when()
             .post("/api/reservations")
         .then()
-            .statusCode(not(200)); // 400, 403, 500 중 하나
+            .statusCode(not(200));
     }
 }
