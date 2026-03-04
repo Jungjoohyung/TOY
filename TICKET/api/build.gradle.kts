@@ -1,7 +1,18 @@
+import org.flywaydb.gradle.task.FlywayMigrateTask
+
+buildscript {
+    repositories { mavenCentral() }
+    dependencies {
+        classpath("com.mysql:mysql-connector-j:8.3.0")
+        classpath("org.flywaydb:flyway-mysql:10.15.0")
+    }
+}
+
 plugins {
     id("java")
     id("org.springframework.boot") version "3.3.0"
     id("io.spring.dependency-management") version "1.1.5"
+    id("org.flywaydb.flyway") version "10.15.0"
 }
 
 group = "com.toy"
@@ -35,7 +46,7 @@ dependencies {
     // 6. swagger (SpringDoc)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
 
-    // 7. 입력값 검등용 
+    // 7. 입력값 검등용
     implementation ("org.springframework.boot:spring-boot-starter-validation")
 
     // 8. redis
@@ -54,4 +65,12 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// Flyway Gradle 태스크 설정 (flywayMigrate, flywayInfo 등 직접 실행용)
+flyway {
+    url = "jdbc:mysql://localhost:3306/ticket_service?serverTimezone=Asia/Seoul&characterEncoding=UTF-8"
+    user = "root"
+    password = "root"
+    locations = arrayOf("filesystem:src/main/resources/db/migration")
 }
