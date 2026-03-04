@@ -38,8 +38,12 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
     //6. redis
-    implementation ("org.springframework.boot:spring-boot-starter-data-redis")
-    implementation ("org.redisson:redisson-spring-boot-starter:3.25.2")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.redisson:redisson-spring-boot-starter:3.25.2")
+
+    //7. Flyway (스키마 버전 관리 — api 모듈에서 실행, core는 의존성만 선언)
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-mysql")
 }
 
 

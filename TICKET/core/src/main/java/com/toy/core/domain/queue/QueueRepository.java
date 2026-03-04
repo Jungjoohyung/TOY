@@ -1,11 +1,12 @@
 package com.toy.core.domain.queue;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.Set;
-
 import java.util.concurrent.TimeUnit;
 
 @Repository
@@ -14,55 +15,57 @@ public class QueueRepository {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    // 대기열 키 (은행 번호표 기계 이름)
     private static final String WAITING_KEY = "waiting_queue";
 
+    @Value("${queue.active-ttl-minutes:5}")
+    private long activeTtlMinutes;
+
     /**
-     * 1. 대기열 등록 (줄 서기)
-     * - Redis ZSet에 넣습니다. (Key: 유저ID, Score: 현재시간)
-     * - 이미 줄 서 있으면 false 반환
+     * 대기열 등록: Redis ZSet에 timestamp를 score로 추가 (O(log N)).
+     * 이미 등록된 경우 false 반환.
      */
     public Boolean register(Long userId) {
         long timestamp = System.currentTimeMillis();
-        // ZADD waiting_queue {timestamp} {userId}
         return redisTemplate.opsForZSet().add(WAITING_KEY, userId.toString(), timestamp);
     }
 
     /**
-     * 2. 내 순서 확인 (몇 등인지?)
-     * - 0등부터 시작하므로 +1 해줘야 함
+     * 순번 조회: ZRANK는 O(log N) 연산.
+     * ZSet의 정렬 특성상 삽입/조회 모두 효율적.
      */
     public Long getRank(Long userId) {
-        // ZRANK waiting_queue {userId}
         Long rank = redisTemplate.opsForZSet().rank(WAITING_KEY, userId.toString());
         return (rank != null) ? rank + 1 : null;
     }
 
     /**
-     * 3. 입장 시키기 (대기열에서 제거)
-     * - 대기열에서 N명 뽑아서 제거(입장 처리)
+     * 대기열에서 앞에서 count명 추출 후 제거 (ZRANGE + ZREM).
+     * 스케줄러에서 배치 처리 시 사용.
      */
     public Set<Object> popMin(long count) {
-        // 맨 앞에서부터 count만큼 꺼내옴
         Set<Object> targets = redisTemplate.opsForZSet().range(WAITING_KEY, 0, count - 1);
-
         if (targets != null && !targets.isEmpty()) {
-            // 꺼낸 사람들은 대기열에서 삭제 (이제 은행 창구로 감)
             redisTemplate.opsForZSet().remove(WAITING_KEY, targets.toArray());
         }
         return targets;
     }
 
-    // 5분 동안만 유효한 'active:user:{id}' 키를 만듭니다.
+    /**
+     * Active 토큰 발급: TTL은 application.yml의 queue.active-ttl-minutes로 조정 가능.
+     * SET active:user:{id} true EX {ttl}
+     */
     public void activate(Long userId) {
         String key = "active:user:" + userId;
-        redisTemplate.opsForValue().set(key, "true", 5, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(key, "true", activeTtlMinutes, TimeUnit.MINUTES);
     }
 
-    //  검문 (출입증 있니?)
+    /**
+     * Active 여부 확인: EXISTS 명령 → O(1).
+     * QueueInterceptor에서 매 요청마다 호출되나, O(1) Redis 단일 커맨드라 부하 미미.
+     * 로컬 캐시 대안은 분산 환경(다중 인스턴스)에서 일관성 보장 불가로 부적합.
+     */
     public boolean isAllowed(Long userId) {
         String key = "active:user:" + userId;
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
-
 }

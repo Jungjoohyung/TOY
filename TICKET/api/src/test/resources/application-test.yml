@@ -10,6 +10,9 @@ spring:
       host: localhost
       port: 6379
 
+  flyway:
+    enabled: false   # 테스트는 H2 + create-drop으로 스키마 관리
+
   jpa:
     hibernate:
       ddl-auto: create-drop

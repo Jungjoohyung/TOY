@@ -38,11 +38,14 @@ dependencies {
     // 7. 입력값 검등용 
     implementation ("org.springframework.boot:spring-boot-starter-validation")
 
-    // 8. redis 
-    implementation ("org.springframework.boot:spring-boot-starter-data-redis")
-    implementation ("org.redisson:redisson-spring-boot-starter:3.25.2")
+    // 8. redis
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.redisson:redisson-spring-boot-starter:3.25.2")
 
-    
+    // 9. Flyway (DB 스키마 버전 관리)
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-mysql")     // MySQL 8+ 지원
+    runtimeOnly("com.mysql:mysql-connector-j")      // Flyway 실행 시 직접 필요
 }
 
 tasks.test {
