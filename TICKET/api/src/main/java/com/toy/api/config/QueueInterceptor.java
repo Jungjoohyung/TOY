@@ -38,8 +38,19 @@ public class QueueInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         Long userId = (Long) request.getAttribute("userId");
+        if (userId == null) return true;
 
-        if (userId != null && !localCache.get(userId, queueRepository::isAllowed)) {
+        // 긍정(true)만 캐싱: 미통과(false)는 캐싱하지 않아 Active 전환 즉시 반영
+        Boolean cached = localCache.getIfPresent(userId);
+        boolean allowed;
+        if (cached != null) {
+            allowed = true; // 캐시에는 true만 저장되어 있음
+        } else {
+            allowed = queueRepository.isAllowed(userId);
+            if (allowed) localCache.put(userId, true);
+        }
+
+        if (!allowed) {
             log.warn("[새치기 감지] 대기열을 통과하지 않은 유저입니다. ID: {}", userId);
             throw new BusinessException("대기열을 순서대로 통과해야 예약할 수 있습니다.");
         }

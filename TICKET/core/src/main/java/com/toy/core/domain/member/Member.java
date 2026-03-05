@@ -1,5 +1,7 @@
 package com.toy.core.domain.member;
 
+import com.toy.common.exception.BusinessException;
+
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -42,7 +44,7 @@ public class Member {
     //충전
     public void charge(long amount) {
         if (amount <= 0) {
-            throw new IllegalArgumentException("0원 이상만 충전 가능합니다.");
+            throw new BusinessException("0원 이상만 충전 가능합니다.");
         }
         this.point += amount;
     }
@@ -50,7 +52,7 @@ public class Member {
     //결제
     public void use(long amount) {
         if (this.point < amount) {
-            throw new IllegalArgumentException("잔액이 부족합니다."); // 🚨 거지(Beggar) 방지 로직
+            throw new BusinessException("잔액이 부족합니다. 포인트를 충전해주세요.");
         }
         this.point -= amount;
     }

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>티켓팅 테스트</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #222; }
+
+    header {
+      background: #1a1a2e; color: #eee; padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 18px; letter-spacing: 1px; }
+    #token-status { font-size: 12px; color: #aef; }
+
+    .container { display: grid; grid-template-columns: 300px 1fr; gap: 16px; padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+    .card {
+      background: #fff; border-radius: 8px; padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+    .card h2 { font-size: 14px; font-weight: 700; color: #555; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+
+    input, select, button {
+      width: 100%; padding: 8px 10px; margin-top: 6px;
+      border: 1px solid #ddd; border-radius: 5px; font-size: 13px;
+    }
+    button {
+      background: #1a1a2e; color: #fff; cursor: pointer; border: none;
+      margin-top: 10px; font-weight: 600; letter-spacing: 0.3px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #16213e; }
+    button.secondary { background: #4a90e2; }
+    button.secondary:hover { background: #357abd; }
+    button.danger { background: #e74c3c; }
+    button.danger:hover { background: #c0392b; }
+    button.success { background: #27ae60; }
+    button.success:hover { background: #1e8449; }
+    button.warning { background: #f39c12; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+
+    .log {
+      font-size: 11px; font-family: monospace;
+      background: #1a1a2e; color: #7fff7f; padding: 10px;
+      border-radius: 5px; max-height: 120px; overflow-y: auto;
+      margin-top: 8px; white-space: pre-wrap; word-break: break-all;
+    }
+
+    /* Auth logged-in state */
+    #auth-loggedin {
+      display: none; padding: 12px;
+      background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 6px;
+      text-align: center; margin-top: 6px;
+    }
+    #auth-loggedin .user-email { font-weight: 700; font-size: 14px; color: #1b5e20; }
+    #auth-loggedin .user-label { font-size: 11px; color: #388e3c; margin-top: 2px; }
+    #auth-loggedin button { margin-top: 8px; background: #888; }
+
+    /* Queue status */
+    #rank-display {
+      text-align: center; padding: 16px 0 4px;
+      font-size: 36px; font-weight: 900; color: #1a1a2e;
+    }
+    #rank-display.active { color: #27ae60; }
+    #rank-label { font-size: 12px; color: #888; text-align: center; }
+    #queue-timer { font-size: 11px; color: #aaa; text-align: center; margin-top: 4px; }
+
+    /* Performances */
+    .perf-list { list-style: none; }
+    .perf-list li {
+      padding: 8px 10px; border: 1px solid #eee; border-radius: 5px;
+      margin-top: 6px; cursor: pointer; font-size: 13px;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: background 0.15s;
+    }
+    .perf-list li:hover { background: #f0f4ff; }
+    .perf-list li.selected { background: #dce8ff; border-color: #4a90e2; }
+    .badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+    .badge.concert { background: #f4e4ff; color: #7b2d8b; }
+    .badge.sports  { background: #e4f4e8; color: #1a7a30; }
+
+    /* Schedules */
+    .schedule-list { list-style: none; }
+    .schedule-list li {
+      padding: 7px 10px; border: 1px solid #eee; border-radius: 5px;
+      margin-top: 5px; cursor: pointer; font-size: 12px;
+      transition: background 0.15s;
+    }
+    .schedule-list li:hover { background: #f0f4ff; }
+    .schedule-list li.selected { background: #dce8ff; border-color: #4a90e2; }
+
+    /* Seats grid */
+    #seat-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .seat-btn {
+      width: 60px; height: 36px; font-size: 11px; font-weight: 700;
+      border-radius: 4px; border: 1.5px solid #4a90e2;
+      background: #fff; color: #4a90e2; cursor: pointer; margin-top: 0;
+      transition: all 0.15s;
+    }
+    .seat-btn:hover { background: #4a90e2; color: #fff; }
+    .seat-btn.reserved { background: #ddd; border-color: #bbb; color: #aaa; cursor: not-allowed; }
+    .seat-btn.selected { background: #4a90e2; color: #fff; }
+
+    /* Reservations table */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+    th, td { padding: 6px 8px; border: 1px solid #eee; text-align: left; }
+    th { background: #f7f7f7; font-weight: 700; color: #555; }
+    td button { width: auto; padding: 3px 8px; font-size: 11px; margin-top: 0; }
+
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .info-text { font-size: 12px; color: #888; margin-top: 6px; }
+
+    /* Queue Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 16px; padding: 36px 48px;
+      text-align: center; min-width: 300px;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.35);
+      animation: popIn 0.2s ease-out;
+    }
+    @keyframes popIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-box h3 { font-size: 15px; color: #555; margin-bottom: 20px; letter-spacing: 0.3px; }
+    #modal-rank { font-size: 72px; font-weight: 900; color: #1a1a2e; line-height: 1; }
+    #modal-rank.active { color: #27ae60; }
+    #modal-rank-label { font-size: 13px; color: #888; margin: 10px 0 6px; }
+    #modal-status {
+      font-size: 12px; color: #aaa; margin-bottom: 20px;
+      min-height: 18px;
+    }
+    .modal-spinner {
+      width: 28px; height: 28px; border: 3px solid #eee;
+      border-top-color: #4a90e2; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toast */
+    #toast {
+      display: none; position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%);
+      background: #27ae60; color: #fff; padding: 13px 28px;
+      border-radius: 8px; font-weight: 700; font-size: 14px;
+      z-index: 200; box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+    #toast.error { background: #e74c3c; }
+
+    @media (max-width: 768px) {
+      .container { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>티켓팅 테스트 콘솔</h1>
+  <span id="token-status">미로그인</span>
+</header>
+
+<!-- Queue Wait Modal -->
+<div class="modal-overlay" id="queue-modal">
+  <div class="modal-box">
+    <h3>대기열 입장 대기 중</h3>
+    <div class="modal-spinner" id="modal-spinner"></div>
+    <div id="modal-rank">-</div>
+    <div id="modal-rank-label">내 순번</div>
+    <div id="modal-status">순번을 확인하는 중입니다...</div>
+    <button class="danger" onclick="cancelQueueWait()" style="width:auto;padding:8px 24px;">대기 취소</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<div class="container">
+
+  <!-- LEFT COLUMN -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- AUTH -->
+    <div class="card">
+      <h2>인증</h2>
+      <div id="auth-form">
+        <input type="email"    id="email"    placeholder="이메일" value="test@test.com">
+        <input type="password" id="password" placeholder="비밀번호 (8자 이상)" value="test1234">
+        <input type="text"     id="name"     placeholder="이름 (회원가입 시)" value="테스터">
+        <button onclick="signup()">회원가입</button>
+        <button onclick="login()" class="secondary">로그인</button>
+      </div>
+      <div id="auth-loggedin">
+        <div class="user-email" id="loggedin-email"></div>
+        <div class="user-label">로그인 완료 ✓</div>
+        <button onclick="logout()">로그아웃</button>
+      </div>
+      <div class="log" id="auth-log">대기 중...</div>
+    </div>
+
+    <!-- QUEUE STATUS (monitoring only) -->
+    <div class="card">
+      <h2>대기열 현황</h2>
+      <button onclick="toggleRankPoll()" id="poll-btn" class="secondary">순번 모니터링 시작</button>
+      <div id="rank-display">-</div>
+      <div id="rank-label">내 순번</div>
+      <div id="queue-timer"></div>
+      <div class="log" id="queue-log">대기 중...</div>
+    </div>
+
+    <!-- POINT -->
+    <div class="card">
+      <h2>포인트 충전</h2>
+      <input type="number" id="charge-amount" value="500000" placeholder="충전 금액">
+      <button onclick="chargePoint()" class="success">충전하기</button>
+      <div class="log" id="point-log">대기 중...</div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="right-col">
+
+    <!-- PERFORMANCES + SCHEDULES -->
+    <div class="two-col">
+      <div class="card">
+        <h2>공연 목록</h2>
+        <button onclick="loadPerformances()" class="secondary">공연 불러오기</button>
+        <ul class="perf-list" id="perf-list"><li style="color:#aaa;font-size:12px;padding:8px;">공연 없음</li></ul>
+      </div>
+      <div class="card">
+        <h2>회차 선택</h2>
+        <div class="info-text" id="perf-title-label">공연을 먼저 선택하세요.</div>
+        <ul class="schedule-list" id="schedule-list"></ul>
+        <button onclick="loadSeats()" class="secondary" style="margin-top:10px;">좌석 불러오기</button>
+      </div>
+    </div>
+
+    <!-- SEATS -->
+    <div class="card">
+      <h2>좌석 선택</h2>
+      <div class="info-text" id="seat-info">회차를 선택 후 좌석을 불러오세요.</div>
+      <div id="seat-grid"></div>
+      <div style="margin-top:12px;">
+        <button onclick="checkQueueAndReserve()" id="reserve-btn" disabled>선택 좌석 예매</button>
+      </div>
+      <div class="log" id="seat-log">대기 중...</div>
+    </div>
+
+    <!-- MY RESERVATIONS -->
+    <div class="card">
+      <h2>내 예매 내역</h2>
+      <button onclick="loadReservations()" class="secondary">내역 새로고침</button>
+      <div id="reservation-table" style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>ID</th><th>공연</th><th>좌석</th><th>금액</th><th>예매시각</th><th>결제</th><th>취소</th></tr></thead>
+          <tbody id="res-tbody"><tr><td colspan="6" style="text-align:center;color:#aaa;">없음</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────
+  let token = null;
+  let monitorInterval = null;   // 대기열 현황 모니터링용
+  let queuePollInterval = null; // 예매 대기 중 자동 폴링용
+  let selectedSeatId = null;
+  let selectedScheduleId = null;
+  let pendingSeatId = null;     // 예매 대기 중인 좌석 ID
+  let toastTimer = null;
+  const paidSet = new Set();    // 결제 완료된 reservationId 추적
+
+  // ── Helpers ────────────────────────────────────────────────
+  const BASE = '';
+
+  function authHeaders() {
+    const h = { 'Content-Type': 'application/json' };
+    if (token) h['Authorization'] = 'Bearer ' + token;
+    return h;
+  }
+
+  function appendLog(id, msg, isErr = false) {
+    const el = document.getElementById(id);
+    const ts = new Date().toLocaleTimeString('ko-KR');
+    el.textContent = `[${ts}] ${msg}\n` + el.textContent;
+    el.style.color = isErr ? '#ff6b6b' : '#7fff7f';
+  }
+
+  async function api(method, path, body) {
+    const opts = { method, headers: authHeaders() };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    const res = await fetch(BASE + path, opts);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.message || json.error || `HTTP ${res.status}`);
+    return json;
+  }
+
+  function showToast(msg, isErr = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = isErr ? 'error' : '';
+    el.style.display = 'block';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+  }
+
+  function isQueueError(err) {
+    const msg = (err.message || '').toLowerCase();
+    return msg.includes('대기열') || msg.includes('순서') || msg.includes('queue');
+  }
+
+  // ── Auth ───────────────────────────────────────────────────
+  async function signup() {
+    try {
+      const data = await api('POST', '/api/auth/signup', {
+        email: v('email'), password: v('password'), name: v('name')
+      });
+      appendLog('auth-log', `회원가입 성공 (userId: ${data.data})`);
+    } catch(e) { appendLog('auth-log', '회원가입 실패: ' + e.message, true); }
+  }
+
+  async function login() {
+    try {
+      const data = await api('POST', '/api/auth/login', { email: v('email'), password: v('password') });
+      token = data.data;
+      const email = v('email');
+      document.getElementById('token-status').textContent = '로그인됨: ' + email;
+      document.getElementById('auth-form').style.display = 'none';
+      document.getElementById('loggedin-email').textContent = email;
+      document.getElementById('auth-loggedin').style.display = 'block';
+      appendLog('auth-log', '로그인 성공. 토큰 저장 완료.');
+    } catch(e) { appendLog('auth-log', '로그인 실패: ' + e.message, true); }
+  }
+
+  function logout() {
+    token = null;
+    document.getElementById('token-status').textContent = '미로그인';
+    document.getElementById('auth-form').style.display = 'block';
+    document.getElementById('auth-loggedin').style.display = 'none';
+    appendLog('auth-log', '로그아웃 완료.');
+  }
+
+  // ── Queue monitoring (수동) ─────────────────────────────────
+  async function fetchRank() {
+    try {
+      const data = await api('GET', '/api/queue/rank');
+      const rank = data.data;
+      updateRankDisplay(rank);
+      document.getElementById('queue-timer').textContent = '갱신: ' + new Date().toLocaleTimeString('ko-KR');
+      appendLog('queue-log', `순번: ${rank ?? '활성화됨'}`);
+      return rank;
+    } catch(e) {
+      appendLog('queue-log', '순번 조회 실패: ' + e.message, true);
+      return undefined;
+    }
+  }
+
+  function isActive(rank) {
+    return rank === null || rank === undefined || rank === 0;
+  }
+
+  function updateRankDisplay(rank) {
+    const el = document.getElementById('rank-display');
+    if (isActive(rank)) {
+      el.textContent = '통과';
+      el.className = 'active';
+      document.getElementById('rank-label').textContent = '대기열 통과 완료';
+    } else {
+      el.textContent = rank;
+      el.className = rank === 1 ? 'active' : '';
+      document.getElementById('rank-label').textContent = rank === 1 ? '곧 입장!' : `내 순번 (앞에 ${rank - 1}명)`;
+    }
+  }
+
+  function toggleRankPoll() {
+    const btn = document.getElementById('poll-btn');
+    if (monitorInterval) {
+      clearInterval(monitorInterval);
+      monitorInterval = null;
+      btn.textContent = '순번 모니터링 시작';
+      btn.className = 'secondary';
+    } else {
+      fetchRank();
+      monitorInterval = setInterval(fetchRank, 3000);
+      btn.textContent = '모니터링 중지';
+      btn.className = 'danger';
+    }
+  }
+
+  // ── Queue Modal (자동 예매 흐름) ────────────────────────────
+  function openQueueModal(rank) {
+    document.getElementById('queue-modal').classList.add('open');
+    updateModalRank(rank);
+  }
+
+  function closeQueueModal() {
+    document.getElementById('queue-modal').classList.remove('open');
+    document.getElementById('modal-spinner').style.display = 'block';
+  }
+
+  function updateModalRank(rank) {
+    const el = document.getElementById('modal-rank');
+    const label = document.getElementById('modal-rank-label');
+    const status = document.getElementById('modal-status');
+    if (isActive(rank)) {
+      el.textContent = '통과!';
+      el.className = 'active';
+      label.textContent = '대기열 통과 — 예매 진행 중...';
+      status.textContent = '자동으로 예매를 시도합니다.';
+      document.getElementById('modal-spinner').style.display = 'none';
+    } else {
+      el.textContent = rank;
+      el.className = '';
+      label.textContent = rank === 1 ? '곧 입장합니다!' : `앞에 ${rank - 1}명 남았습니다.`;
+      status.textContent = '3초마다 자동으로 확인합니다.';
+    }
+  }
+
+  function startQueuePoll() {
+    stopQueuePoll();
+    queuePollInterval = setInterval(async () => {
+      try {
+        const data = await api('GET', '/api/queue/rank');
+        const rank = data.data;
+        updateModalRank(rank);
+        updateRankDisplay(rank);
+
+        // rank=null 또는 rank=0 → Active 전환 완료 (백엔드가 "미대기" 상태를 0으로 반환)
+        if (isActive(rank)) {
+          stopQueuePoll();
+          try {
+            await doReserve(pendingSeatId);
+          } catch(e) {
+            closeQueueModal();
+            setReserveBtn('idle');
+            showToast(e.message, true);
+            appendLog('seat-log', '예매 실패: ' + e.message, true);
+          }
+        }
+      } catch(e) {
+        appendLog('seat-log', '폴링 오류: ' + e.message, true);
+      }
+    }, 3000);
+  }
+
+  function stopQueuePoll() {
+    if (queuePollInterval) {
+      clearInterval(queuePollInterval);
+      queuePollInterval = null;
+    }
+  }
+
+  function cancelQueueWait() {
+    stopQueuePoll();
+    closeQueueModal();
+    pendingSeatId = null;
+    setReserveBtn('idle');
+    appendLog('seat-log', '대기 취소.');
+  }
+
+  // ── 핵심: 예매 버튼 클릭 시 자동 대기열 판단 ───────────────
+  async function checkQueueAndReserve() {
+    if (!selectedSeatId) return;
+    pendingSeatId = selectedSeatId;
+    setReserveBtn('loading');
+    appendLog('seat-log', '예매 시도 중...');
+
+    let rank;
+    try {
+      const data = await api('GET', '/api/queue/rank');
+      rank = data.data;
+    } catch(_) {
+      rank = 'UNKNOWN';
+    }
+
+    // 이미 대기 중인 경우 → 모달 바로 띄우기
+    if (typeof rank === 'number' && rank > 0) {
+      appendLog('seat-log', `대기열 중 (순번: ${rank}) — 모달로 대기합니다.`);
+      openQueueModal(rank);
+      startQueuePoll();
+      return;
+    }
+
+    // Active이거나 미등록 → 예매 먼저 시도
+    try {
+      await doReserve(pendingSeatId);
+    } catch(err) {
+      if (isQueueError(err)) {
+        // 인터셉터가 차단 → 대기열 자동 등록 후 모달
+        appendLog('seat-log', '대기열 미통과 → 자동 등록 후 대기합니다.');
+        try {
+          await api('POST', '/api/queue');
+          const rankData = await api('GET', '/api/queue/rank');
+          openQueueModal(rankData.data);
+          startQueuePoll();
+        } catch(e2) {
+          appendLog('seat-log', '대기열 등록 실패: ' + e2.message, true);
+          setReserveBtn('idle');
+        }
+      } else {
+        appendLog('seat-log', '예매 실패: ' + err.message, true);
+        showToast(err.message, true);
+        setReserveBtn('idle');
+      }
+    }
+  }
+
+  async function doReserve(seatId) {
+    const data = await api('POST', '/api/reservations', { seatId });
+    const reservationId = data.data;
+    closeQueueModal();
+    setReserveBtn('idle');
+    appendLog('seat-log', `예매 성공! reservationId: ${reservationId} — 내역에서 결제하세요.`);
+    showToast('예매 완료! 내역에서 결제하세요.');
+    await loadSeats();
+    await loadReservations();
+  }
+
+  function setReserveBtn(state) {
+    const btn = document.getElementById('reserve-btn');
+    if (state === 'loading') {
+      btn.disabled = true;
+      btn.textContent = '처리 중...';
+      btn.className = 'warning';
+    } else {
+      btn.disabled = (selectedSeatId === null);
+      btn.textContent = '선택 좌석 예매';
+      btn.className = '';
+    }
+  }
+
+  // ── Point ──────────────────────────────────────────────────
+  async function chargePoint() {
+    try {
+      const amount = parseInt(document.getElementById('charge-amount').value, 10);
+      const data = await api('POST', '/api/points/charge', { amount });
+      appendLog('point-log', `충전 완료. 잔액: ${data.data?.toLocaleString() ?? data.data}원`);
+    } catch(e) { appendLog('point-log', '충전 실패: ' + e.message, true); }
+  }
+
+  // ── Performances ───────────────────────────────────────────
+  async function loadPerformances() {
+    try {
+      const data = await api('GET', '/api/performances');
+      const list = data.data ?? [];
+      const ul = document.getElementById('perf-list');
+      ul.innerHTML = '';
+      list.forEach(p => {
+        const li = document.createElement('li');
+        const type = (p.type || '').toLowerCase();
+        li.innerHTML = `<span>${p.title}</span><span class="badge ${type}">${p.type}</span>`;
+        li.onclick = () => selectPerformance(p, li);
+        ul.appendChild(li);
+      });
+      if (list.length === 0) ul.innerHTML = '<li style="color:#aaa;font-size:12px;padding:8px;">공연 없음</li>';
+    } catch(e) { appendLog('seat-log', '공연 목록 실패: ' + e.message, true); }
+  }
+
+  async function selectPerformance(p, li) {
+    document.querySelectorAll('.perf-list li').forEach(el => el.classList.remove('selected'));
+    li.classList.add('selected');
+    document.getElementById('perf-title-label').textContent = p.title;
+    try {
+      const data = await api('GET', '/api/performances/' + p.id);
+      const schedules = (data.data ?? {}).schedules ?? [];
+      const ul = document.getElementById('schedule-list');
+      ul.innerHTML = '';
+      schedules.forEach(s => {
+        const li2 = document.createElement('li');
+        const dt = new Date(s.startDateTime);
+        li2.textContent = dt.toLocaleString('ko-KR', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+        li2.onclick = () => {
+          document.querySelectorAll('.schedule-list li').forEach(el => el.classList.remove('selected'));
+          li2.classList.add('selected');
+          selectedScheduleId = s.id;
+        };
+        ul.appendChild(li2);
+      });
+      if (schedules.length === 0) ul.innerHTML = '<li style="color:#aaa;font-size:12px;padding:6px;">회차 없음</li>';
+    } catch(e) { appendLog('seat-log', '공연 상세 실패: ' + e.message, true); }
+  }
+
+  // ── Seats ──────────────────────────────────────────────────
+  async function loadSeats() {
+    if (!selectedScheduleId) { alert('회차를 먼저 선택하세요.'); return; }
+    try {
+      const data = await api('GET', `/api/schedules/${selectedScheduleId}/seats`);
+      const seats = data.data ?? [];
+      document.getElementById('seat-info').textContent = `좌석 ${seats.length}개 (예매가능: ${seats.filter(s=>!s.reserved).length}개)`;
+      const grid = document.getElementById('seat-grid');
+      grid.innerHTML = '';
+      selectedSeatId = null;
+      setReserveBtn('idle');
+
+      seats.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'seat-btn' + (s.reserved ? ' reserved' : '');
+        btn.textContent = s.seatNumber;
+        btn.title = s.price.toLocaleString() + '원';
+        btn.disabled = s.reserved;
+        btn.onclick = () => {
+          document.querySelectorAll('.seat-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedSeatId = s.id;
+          setReserveBtn('idle');
+          document.getElementById('seat-info').textContent = `선택: ${s.seatNumber} / ${s.price.toLocaleString()}원`;
+        };
+        grid.appendChild(btn);
+      });
+    } catch(e) { appendLog('seat-log', '좌석 조회 실패: ' + e.message, true); }
+  }
+
+  async function payReservation(reservationId) {
+    try {
+      const data = await api('POST', '/api/payments', { reservationId });
+      paidSet.add(reservationId);
+      appendLog('seat-log', `결제 성공! reservationId: ${reservationId}, paymentId: ${data.data}`);
+      showToast('결제 완료!');
+      await loadReservations();
+    } catch(e) {
+      appendLog('seat-log', '결제 실패: ' + e.message, true);
+      showToast(e.message, true);
+    }
+  }
+
+  // ── Reservations ───────────────────────────────────────────
+  async function loadReservations() {
+    try {
+      const data = await api('GET', '/api/reservations');
+      const list = data.data ?? [];
+      const tbody = document.getElementById('res-tbody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;">없음</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(r => {
+        const paid = paidSet.has(r.id);
+        const payCell = paid
+          ? `<span style="color:#27ae60;font-weight:700;font-size:11px;">결제완료</span>`
+          : `<button class="success" onclick="payReservation(${r.id})" style="width:auto;padding:3px 8px;font-size:11px;margin-top:0;">결제</button>`;
+        return `
+        <tr style="${paid ? 'background:#f0fff4;' : ''}">
+          <td>${r.id}</td>
+          <td>${r.title ?? '-'}</td>
+          <td>${r.seatNumber}</td>
+          <td>${(r.price ?? 0).toLocaleString()}원</td>
+          <td>${r.reservedAt ? new Date(r.reservedAt).toLocaleString('ko-KR') : '-'}</td>
+          <td>${payCell}</td>
+          <td>${paid ? '-' : `<button class="danger" onclick="cancelReservation(${r.id})" style="width:auto;padding:3px 8px;font-size:11px;margin-top:0;">취소</button>`}</td>
+        </tr>`;
+      }).join('');
+    } catch(e) { appendLog('seat-log', '예약 목록 실패: ' + e.message, true); }
+  }
+
+  async function cancelReservation(id) {
+    if (!confirm(`예매 #${id}를 취소하시겠습니까?`)) return;
+    try {
+      await api('DELETE', '/api/reservations/' + id);
+      appendLog('seat-log', `예매 #${id} 취소 완료`);
+      await loadReservations();
+    } catch(e) { appendLog('seat-log', '취소 실패: ' + e.message, true); }
+  }
+
+  // ── Util ───────────────────────────────────────────────────
+  function v(id) { return document.getElementById(id).value; }
+</script>
+</body>
+</html>
