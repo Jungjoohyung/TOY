@@ -30,12 +30,12 @@ public class ReservationService {
     private long paymentDeadlineMinutes;
 
     /**
-     * 좌석 선점: 비관적 락으로 좌석을 잠그고 PENDING 예약 생성.
+     * 좌석 선점: Redis 분산 락(ReservationFacade)이 직렬화를 보장하므로 일반 조회로 충분.
      * 포인트 차감은 결제(PaymentService)에서 수행.
      */
     @Transactional
     public Long reserve(Long userId, Long seatId) {
-        Seat seat = seatRepository.findByIdWithLock(seatId)
+        Seat seat = seatRepository.findById(seatId)
                 .orElseThrow(() -> new EntityNotFoundException("좌석을 찾을 수 없습니다."));
 
         if (seat.isReserved()) {

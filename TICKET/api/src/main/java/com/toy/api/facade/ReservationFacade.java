@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -20,9 +19,9 @@ import java.util.concurrent.TimeUnit;
  * 예약 유즈케이스 오케스트레이터.
  * 흐름: (대기열 검증은 QueueInterceptor에서 완료) → Redis 분산 락 획득 → 좌석 선점 → 락 해제
  *
- * 트랜잭션 경계: Facade는 트랜잭션을 직접 소유하지 않음.
- * DB 트랜잭션은 ReservationService 각 메서드가 소유 (@Transactional).
- * Redis 분산 락은 트랜잭션 외부에서 제어하여 락 점유 시간 최소화.
+ * 단일 락 체제: Redis 분산 락이 seatId 단위로 요청을 직렬화하므로
+ * DB 비관적 락(@Lock) 및 낙관적 락(@Version) 중복 불필요.
+ * 트랜잭션은 ReservationService가 소유(@Transactional).
  */
 @Slf4j
 @Component
@@ -33,58 +32,31 @@ public class ReservationFacade {
     private final RedissonClient redissonClient;
 
     /**
-     * 좌석 예매: Redis 분산 락으로 동시 접근 직렬화 후 DB 비관적 락으로 선점.
-     * 낙관적 락 충돌 시 최대 3회 재시도.
+     * 좌석 예매: Redis 분산 락으로 동시 접근 직렬화 후 좌석 선점.
+     * 락 획득 실패 시 즉시 거절 (재시도 없음 — 직렬화된 환경에서 재시도 불필요).
      */
     public Long reserveTicket(Long userId, Long seatId) {
-        String lockName = "lock:seat:" + seatId;
-        RLock lock = redissonClient.getLock(lockName);
-
-        int maxRetries = 3;
-        int currentRetry = 0;
-
-        while (currentRetry < maxRetries) {
-            try {
-                boolean available = lock.tryLock(5, 3, TimeUnit.SECONDS);
-
-                if (!available) {
-                    log.warn("[락 획득 실패] 현재 다른 사용자가 예매 중: seatId={}", seatId);
-                    throw new BusinessException("지금 접속자가 많아 예매가 지연되고 있습니다. 다시 시도해주세요.");
-                }
-
-                // 좌석 선점 (DB 비관적 락 + PENDING 예약 생성)
-                return reservationService.reserve(userId, seatId);
-
-            } catch (ObjectOptimisticLockingFailureException e) {
-                currentRetry++;
-                log.warn("[낙관적 락 충돌] 재시도 중... ({}/{}) seatId={}", currentRetry, maxRetries, seatId);
-                if (currentRetry >= maxRetries) {
-                    throw new BusinessException("동시 예매가 너무 많아 실패했습니다. 다시 시도해주세요.");
-                }
-                try {
-                    Thread.sleep(50);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    throw new BusinessException("예매 처리 중 서버 오류가 발생했습니다.");
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new BusinessException("예매 처리 중 서버 오류가 발생했습니다.");
-            } finally {
-                if (lock.isHeldByCurrentThread()) {
-                    lock.unlock();
-                }
+        RLock lock = redissonClient.getLock("lock:seat:" + seatId);
+        try {
+            if (!lock.tryLock(5, 3, TimeUnit.SECONDS)) {
+                log.warn("[락 획득 실패] 현재 다른 사용자가 예매 중: seatId={}", seatId);
+                throw new BusinessException("지금 접속자가 많아 예매가 지연되고 있습니다. 다시 시도해주세요.");
+            }
+            return reservationService.reserve(userId, seatId);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException("예매 처리 중 서버 오류가 발생했습니다.");
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
             }
         }
-        throw new BusinessException("예매 처리 중 오류가 발생했습니다.");
     }
 
-    // 트랜잭션은 ReservationService.cancelReservation()이 소유
     public void cancelTicket(Long userId, Long reservationId) {
         reservationService.cancelReservation(userId, reservationId);
     }
 
-    // 트랜잭션은 ReservationService.getMyReservations()이 소유 (readOnly)
     public List<ReservationResponse> getHistory(Long userId) {
         return reservationService.getMyReservations(userId);
     }

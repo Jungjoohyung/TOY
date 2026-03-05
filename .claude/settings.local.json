@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs cat)",
+      "Bash(./gradlew compileJava compileTestJava --no-daemon)",
+      "Bash(./gradlew :api:compileJava)",
+      "Bash(docker exec ticket-mysql mysql -uroot -proot -e \"DROP DATABASE IF EXISTS ticket_service; CREATE DATABASE ticket_service CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\")",
+      "Bash(./gradlew :api:flywayMigrate)",
+      "Bash(docker exec ticket-mysql mysql -uroot -proot ticket_service -e \":*)",
+      "Bash(docker exec ticket-mysql mysql -uroot -proot ticket_service --default-character-set=utf8mb4 -e \":*)",
+      "Bash(./gradlew :api:compileJava :core:compileJava)"
+    ]
+  }
+}

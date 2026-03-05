@@ -61,8 +61,8 @@ public class QueueRepository {
 
     /**
      * Active 여부 확인: EXISTS 명령 → O(1).
-     * QueueInterceptor에서 매 요청마다 호출되나, O(1) Redis 단일 커맨드라 부하 미미.
-     * 로컬 캐시 대안은 분산 환경(다중 인스턴스)에서 일관성 보장 불가로 부적합.
+     * QueueInterceptor의 Caffeine 로컬 캐시(5s TTL)에 의해 캐싱되므로
+     * 실제 Redis 호출은 캐시 미스 시에만 발생.
      */
     public boolean isAllowed(Long userId) {
         String key = "active:user:" + userId;

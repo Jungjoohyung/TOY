@@ -61,6 +61,9 @@ dependencies {
     // 10. ShedLock (분산 스케줄러 중복 실행 방지)
     implementation("net.javacrumbs.shedlock:shedlock-spring:5.14.0")
     implementation("net.javacrumbs.shedlock:shedlock-provider-redis-spring:5.14.0")
+
+    // 11. Caffeine (QueueInterceptor 로컬 캐시 — Redis 호출 횟수 감소)
+    implementation("com.github.ben-manes.caffeine:caffeine")
 }
 
 tasks.test {

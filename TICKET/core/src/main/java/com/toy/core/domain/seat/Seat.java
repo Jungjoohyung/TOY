@@ -17,9 +17,6 @@ public class Seat {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Version
-    private Long version;
-
     @Column(nullable = false)
     private String seatNumber;
 
