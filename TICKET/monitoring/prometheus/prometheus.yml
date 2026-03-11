@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'spring-boot-ticket'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # host.docker.internal: Docker 컨테이너에서 호스트 머신(Windows/Mac)의 8080 포트 접근
+      # Linux 환경이라면 172.17.0.1 으로 교체
+      - targets: ['host.docker.internal:8080']
+    scrape_interval: 5s

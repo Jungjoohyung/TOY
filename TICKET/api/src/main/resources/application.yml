@@ -64,7 +64,7 @@ logging:
     org.hibernate.SQL: INFO
     org.hibernate.type: INFO
     org.hibernate.type.descriptor.sql.BasicBinder: INFO
-    org.springframework.data.redis: DEBUG
+    org.springframework.data.redis: INFO
 
 # 대기열 & 예약 설정
 queue:
@@ -73,3 +73,18 @@ queue:
 
 reservation:
   payment-deadline-minutes: 5   # 미결제 예약 자동 취소 기준 시간 (분)
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ticket-service
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true   # p50/p95/p99 히스토그램

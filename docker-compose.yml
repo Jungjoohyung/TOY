@@ -55,6 +55,33 @@ services:
     depends_on:
       - redis
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: toy-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: toy-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - backend-network
+    restart: unless-stopped
+
 networks:
   backend-network:
     driver: bridge
@@ -62,3 +89,4 @@ networks:
 volumes:
   redis-data:
   redisinsight-data:
+  grafana-data:

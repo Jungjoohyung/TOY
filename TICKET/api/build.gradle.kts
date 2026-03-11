@@ -67,6 +67,10 @@ dependencies {
 
     // 12. Kafka (이벤트 기반 결제 처리 — Outbox Pattern)
     implementation("org.springframework.kafka:spring-kafka")
+
+    // 13. Actuator & Micrometer (모니터링)
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 }
 
 tasks.test {
