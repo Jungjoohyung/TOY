@@ -33,6 +33,13 @@
   * **Flyway DB 마이그레이션**: `V1__init.sql`을 통해 `member`, `performance`(JOINED 상속), `seat`, `reservation` 등의 초기 스키마와 Seed 데이터(아이유 콘서트 등)를 형상 관리.
   * **ShedLock**: 여러 대의 API 서버(Pod)가 뜰 경우 `QueueScheduler`가 중복 실행되어 Active 유저가 과다 방출되는 것을 막기 위해 다중화 제어용 분산 락(`@SchedulerLock`) 적용.
 
+### [과제 5] 이벤트 기반 결제 책임 분리 (Event-Driven Architecture & Outbox Pattern)
+* **목표**: 결제 이후 발생할 수 있는 외부 통신(PG사 결제 승인, 알림 발송 등)으로 인한 내부 트랜잭션 지연 및 예외 전파 방지.
+* **설계 결정**:
+  * **Kafka 비동기 큐 도입**: 기존 `PaymentService` 하나에 묶여있던 로직에서 '결제 성공 알림', '외부 API 전송' 등을 `payment.completed` 이벤트 토픽을 통해 비동기로 Consumer에게 위임.
+  * **Transactional Outbox 패턴 (`payment_outbox`)**: 이벤트를 Kafka로 쏘기 전 `payment_outbox` 테이블에 먼저 저장하고 커밋(`@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` 결합)하여, 카프카 브로커 장애 시에도 메시지 유실 제로(Zero Data Loss) 보장.
+  * **스케줄러 통한 재발행 보장 (Retry Scheduling)**: `OutboxRetryScheduler`가 주기적으로 PENDING 상태의 이벤트를 읽어 Kafka에 재발행함으로써 궁극적 일관성(Eventual Consistency) 완전 달성.
+
 ---
 
 ## 🛠️ 주요 트러블슈팅 및 버그 픽스 내역

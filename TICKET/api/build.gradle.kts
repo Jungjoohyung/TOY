@@ -64,6 +64,9 @@ dependencies {
 
     // 11. Caffeine (QueueInterceptor 로컬 캐시 — Redis 호출 횟수 감소)
     implementation("com.github.ben-manes.caffeine:caffeine")
+
+    // 12. Kafka (이벤트 기반 결제 처리 — Outbox Pattern)
+    implementation("org.springframework.kafka:spring-kafka")
 }
 
 tasks.test {

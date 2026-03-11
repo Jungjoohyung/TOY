@@ -14,6 +14,7 @@
 ## 🛠 2. 사용 기술 (Tech Stack)
 * **Backend**: Java 17, Spring Boot 3.3.x, Spring Data JPA
 * **Database & Cache**: MySQL 8.0, Redis (Redisson/Lettuce), Caffeine Cache
+* **Message Broker / Async**: Apache Kafka, Transactional Outbox Pattern
 * **Architecture / Config**: Multi-Module (API, Core, Common), Flyway, ShedLock
 * **Test**: JUnit5, RestAssured (E2E Integration Test)
 
@@ -43,6 +44,13 @@
 * **ShedLock 도입**: 다중 서버(Pod) 환경에서 `QueueScheduler`가 중복 실행되어 대기열 유저를 과다 방출하는 것을 막기 위해 Redis 기반 분산 스케줄러 락 가동.
 * **Flyway DB 마이그레이션**: 배포 환경 간 스키마 정합성과 Seed Data 누락 방지를 위해 DB 버전 관리 구축.
 * **도메인 책임 분리**: 예약과 결제 도메인을 분리. 예약은 `PENDING` 상태의 "소유권 주장"까지만 담당하고, 실제 포인트 차감과 "최종 확정"은 `PaymentService`에서 결제되도록 책임 분할.
+
+### ⑤ 이벤트 기반 아키텍처(EDA) 및 Outbox 패턴을 통한 트랜잭션 분리
+* **문제**: 결제 트랜잭션 내에서 외부 API(PG사, 이메일/카카오톡 알림 등) 호출 시, 외부 서비스 지연이 내부 DB 커넥션 풀 고갈(Cascading Failure)로 이어지거나, 트랜잭션 롤백 시 이벤트 재발송이 불가능한 한계 존재.
+* **해결**:
+  * **Kafka 비동기 처리**: 결제 완료 시 `payment.completed` 이벤트를 Kafka로 Publish 후 비동기(`@Async`) Consumer가 알림과 외부 통신을 처리하게 하여 결제 트랜잭션을 획기적으로 단축.
+  * **Transactional Outbox 패턴 도입**: 메시지 유실(Zero Data Loss) 방지를 위해, DB 트랜잭션과 동일한 생명주기로 `payment_outbox` 테이블에 이벤트를 먼저(PENDING) 기록.
+  * DB 커밋이 완료된 후(`@TransactionalEventListener(AFTER_COMMIT)`) Kafka에 발행(`PUBLISHED`). 실패 시 별도의 30초 주기 스케줄러(`OutboxRetryScheduler`)가 PENDING 이벤트를 긁어와 자동 재발행함으로써 서비스 간 궁극적 일관성(Eventual Consistency) 완벽 보장.
 
 ---
 

@@ -8,7 +8,8 @@
       "Bash(./gradlew :api:flywayMigrate)",
       "Bash(docker exec ticket-mysql mysql -uroot -proot ticket_service -e \":*)",
       "Bash(docker exec ticket-mysql mysql -uroot -proot ticket_service --default-character-set=utf8mb4 -e \":*)",
-      "Bash(./gradlew :api:compileJava :core:compileJava)"
+      "Bash(./gradlew :api:compileJava :core:compileJava)",
+      "Bash(xargs grep -l \"Queue\")"
     ]
   }
 }

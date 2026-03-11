@@ -28,6 +28,22 @@ spring:
     show-sql: true
     open-in-view: false
   
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all           # 모든 레플리카 확인 후 응답 (데이터 손실 방지)
+      retries: 3
+    consumer:
+      group-id: payment-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: false  # 수동 오프셋 커밋 (메시지 처리 후 커밋)
+    listener:
+      ack-mode: batch
+
   # 레디스 설정도 살려둠 (도커에 redis도 떠있다면 정상 작동함)
   data:
     redis:
