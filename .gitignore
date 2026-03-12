@@ -42,3 +42,4 @@ application-local.properties
 
 # Docker
 db/data/
+TICKET/results/

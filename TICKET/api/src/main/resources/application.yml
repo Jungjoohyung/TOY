@@ -68,7 +68,7 @@ logging:
 
 # 대기열 & 예약 설정
 queue:
-  batch-size: 50          # 스케줄러 1회 실행 시 활성화할 최대 인원 수
+  batch-size: 200         # 스케줄러 1회 실행 시 활성화할 최대 인원 수
   active-ttl-minutes: 5   # Active 토큰 유효 시간 (분)
 
 reservation:

@@ -71,6 +71,17 @@
 * **원인**: 엔티티 클래스 내에서 자바 기본 `IllegalArgumentException`을 던지고 있었고, 이는 `GlobalExceptionHandler`의 최종 `Exception` 래퍼(500 Internal Server Error)에 잡혀 실제 메시지가 감춰짐.
 * **해결**: 커스텀 도메인 예외인 `BusinessException`(400 Bad Request)을 던지도록 도메인 객체 내부 코드 수정.
 
+### [과제 6] 부하 테스트 & 모니터링 환경 구축 및 병목 분석
+* **목표**: k6 부하 테스트 도구와 Prometheus, Grafana를 활용하여 시스템 병목 구간 식별 및 개선.
+* **구현 내용**:
+  * **모니터링 인프라**: `docker-compose.yml` 에 Prometheus와 Grafana 볼륨 추가 (자동 프로비저닝된 대시보드 적용).
+  * **Spring Actuator 연동**: API `build.gradle.kts` 에 Micrometer 의존성을 추가해 메트릭 수집 개방(`host.docker.internal:8080/actuator/prometheus`).
+  * **k6 스크립트 작성**: 로그인 -> 대기열 진입 -> 실시간 랭킹 순번 폴링 -> 좌석 예약 -> 결제로 이어지는 통합 시나리오(`reservation_flow.js`) 구현.
+* **트러블슈팅 및 튜닝 내역**:
+  * **InitDb 데이터 비일관성 방어 로직 우회**: 기존의 `if (performanceRepository.count() > 0)` 가드가 작동하여 유저 생성이 무시되는 문제를 겪었습니다. 로직을 `initPerformancesAndSeats()`, `initTestMembers()` 두 가지로 분리하여 각기 독립적인 영속화 가드를 가지도록 변경했습니다. 더불어 100명의 유저와 1000만 포인트가 테스트 환경에 무조건 준비되도록 개선했습니다.
+  * **QueueScheduler 활성화 병목 해결**: 1000명의 유저(VU)가 접속했을 때 평균 처리 시간(`iteration_duration`)이 10초까지 지연되는 원인이 "1초에 50명만 활성화시키는 스케줄러 배치 사이즈" 때문임을 파악했습니다. `application.yml`의 `queue.batch-size`를 **50 -> 200**으로 상향 튜닝했습니다.
+  * **비즈니스 트랜잭션 경합 분석**: 병합률 테스트에서 `http_req_failed`가 6.13%(목표치 5% 초과)로 집계되었습니다. 하지만 분석 결과 5xx 장애가 아닌, 동시 다발적 1000명의 VU가 500개 좌석으로 집중되며 예약 경합에 밀린 유저들의 `409 Conflict (이미 선점된 좌석)` 정상 응답이었음을 확인했습니다.
+
 ---
 
 > 본 문서는 프로젝트 버전업이나 구조 변경 시 지속적으로 업데이트되어야 합니다.
