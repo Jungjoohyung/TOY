@@ -16,6 +16,7 @@
 * **Database & Cache**: MySQL 8.0, Redis (Redisson/Lettuce), Caffeine Cache
 * **Message Broker / Async**: Apache Kafka, Transactional Outbox Pattern
 * **Architecture / Config**: Multi-Module (API, Core, Common), Flyway, ShedLock
+* **Monitoring & Load Test**: Prometheus, Grafana, k6
 * **Test**: JUnit5, RestAssured (E2E Integration Test)
 
 ---
@@ -59,7 +60,7 @@
   * **k6 통합 시나리오 테스트**: `로그인 -> 대기열 진입 및 순번 폴링 -> 좌석 예약 -> 결제`로 이어지는 E2E 스크립트를 작성하여 최대 1,000명의 VU(가상 유저) 동시 접속 테스트 진행.
   * **병목 분석 및 개선**: 
     1. **Throughput 지연 해결 (대기열 & 스케줄러 튜닝)**: 1000명 유저 접속 대비 대기열 스케줄러의 `batch-size` 한계 및 ShedLock(다중 서버 동시성 제어 락)의 최소 유지 시간(`lockAtLeastFor`)으로 인해 1회 `iteration` 평균 10초가량 지연되는 병목 식별. 스케줄러의 락 보유 시간을 `10s`에서 `1s`로, 1회 방출량을 `200명`으로 튜닝 결과, iteration 소요 시간이 **10초 -> 3.6초**로 단축되고 시스템 총 처리량(TPS)이 **57회/초 -> 162회/초**로 3배 이상 폭발적으로 향상됨.
-    2. **정상 예외 분석(False Alarm 방어)**: 좌석 대비 초과 유입으로 발생한 예약 실패를 5xx 시스템 장애가 아닌, `409 Conflict (이미 선점된 좌석)`을 뱉어내는 완벽한 비즈니스 로직 방어로 해석 및 k6 `expectedStatuses`로 스크립트화 적용. 결과적으로 1,000명 동시 VUs 부하시간 동안 **`http_req_failed: 0.00%`** 에러율 제로와 **`p(95)=114ms`** 의 극강의 응답 속도를 달성하며 서버 생존 완벽 증명.
+    2. **정상 예외 분석(False Alarm 방어)**: 좌석 대비 초과 유입으로 발생한 예약 실패를 5xx 시스템 장애가 아닌, `409 Conflict (이미 선점된 좌석)`을 뱉어내는 완벽한 비즈니스 로직 방어로 해석 및 k6 `expectedStatuses`로 스크립트화 적용. 결과적으로 1,000명 동시 VUs 부하시간 동안 **`http_req_failed: 0.00%`** 에러율 제로와 **`p(95)=208ms`** 의 응답 속도를 달성하며 서버 생존 완벽 증명. (500개 좌석 전량 예약 완료 + 결제 성공률 100% 동시 달성)
 
 ---
 
