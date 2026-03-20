@@ -72,7 +72,10 @@ export default function () {
   // 4. Reservation (좌석 500개: seatId 1~500)
   const seatId = Math.floor(Math.random() * 500) + 1;
   const reservePayload = JSON.stringify({ seatId: seatId });
-  const reserveRes = http.post(`${BASE_URL}/api/reservations`, reservePayload, { headers: authHeaders });
+  const reserveRes = http.post(`${BASE_URL}/api/reservations`, reservePayload, { 
+      headers: authHeaders,
+      responseCallback: http.expectedStatuses(200, 409)
+  });
   check(reserveRes, { 'reservation success': (r) => r.status === 200 });
 
   // 5. Payment

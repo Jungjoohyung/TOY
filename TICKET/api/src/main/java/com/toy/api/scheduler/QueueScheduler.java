@@ -29,7 +29,7 @@ public class QueueScheduler {
     private long batchSize;
 
     @Scheduled(fixedDelay = 1000)
-    @SchedulerLock(name = "queue_activation_lock", lockAtMostFor = "50s", lockAtLeastFor = "10s")
+    @SchedulerLock(name = "queue_activation_lock", lockAtMostFor = "50s", lockAtLeastFor = "1s")
     public void enterUsers() {
         Set<Object> enteredUsers = queueRepository.popMin(batchSize);
 
