@@ -4,7 +4,7 @@ spring:
 
   cache:
     type: redis
-    cache-names: performances
+    cache-names: performances, seats
   
   datasource:
     # 도커 MySQL 포트(3306)와 아까 만든 DB이름(ticket)으로 통일!

@@ -12,6 +12,8 @@ import com.toy.core.domain.seat.SeatRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final SeatRepository seatRepository;
     private final MemberRepository memberRepository;
+    private final CacheManager cacheManager;
 
     @Value("${reservation.payment-deadline-minutes:5}")
     private long paymentDeadlineMinutes;
@@ -48,6 +51,9 @@ public class ReservationService {
                 .build();
 
         seat.reserve();
+
+        // 캐시 무효화 (해당 스케줄의 잔여 좌석 최신화)
+        evictSeatCache(seat.getSchedule().getId());
 
         return reservationRepository.save(reservation).getId();
     }
@@ -77,6 +83,15 @@ public class ReservationService {
 
         reservation.cancel();
         reservation.getSeat().release();
+
+        // 캐시 무효화
+        evictSeatCache(reservation.getSeat().getSchedule().getId());
+    }
+
+    private void evictSeatCache(Long scheduleId) {
+        if (cacheManager.getCache("seats") != null) {
+            cacheManager.getCache("seats").evict(scheduleId);
+        }
     }
 
     /**
@@ -89,6 +104,7 @@ public class ReservationService {
      * clearAutomatically = true로 1차 캐시 초기화 처리.
      */
     @Transactional
+    @CacheEvict(value = "seats", allEntries = true)
     public int cancelExpiredReservations() {
         LocalDateTime cutOffTime = LocalDateTime.now().minusMinutes(paymentDeadlineMinutes);
 

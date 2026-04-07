@@ -7,6 +7,7 @@ import com.toy.core.domain.seat.dto.SeatResponse;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ public class SeatService {
     private final SeatRepository seatRepository;
     private final PerformanceScheduleRepository scheduleRepository;
 
+    @Cacheable(value = "seats", key = "#scheduleId")
     public List<SeatResponse> getSeatsBySchedule(Long scheduleId) {
         return seatRepository.findByScheduleIdOrderBySeatNumberAsc(scheduleId).stream()
                 .map(SeatResponse::new)
