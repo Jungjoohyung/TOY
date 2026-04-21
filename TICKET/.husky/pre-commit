@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# ============================================================
+# pre-commit
+# Git 커밋 직전에 자동 실행되는 훅
+# verify.sh 가 실패하면 커밋을 막습니다.
+# ============================================================
+
+# Husky 초기화 스크립트 로드
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo ""
+echo "[pre-commit] 커밋 전 검증 시작"
+echo ""
+
+# 0. 메인 브랜치 직접 커밋 차단
+# 현재 체크아웃된 브랜치명 확인
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
+    echo ""
+    echo "에러: 메인 브랜치에 직접 커밋할 수 없습니다"
+    echo "워크트리 생성 후 feature 브랜치에서 작업하세요:"
+    echo "  ./scripts/new-worktree.sh <기능명>"
+    echo ""
+    exit 1
+fi
+
+# verify.sh 실행
+# 스크립트가 실패(exit 1)하면 이 훅도 실패하여 커밋이 차단됩니다.
+./scripts/verify.sh

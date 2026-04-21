@@ -1,0 +1,28 @@
+{
+  "_comment_1": "Claude Code 전역 설정 파일. 위치: ~/.claude/settings.json",
+  "_comment_2": "사용자 홈 디렉토리의 .claude 폴더에 두면 모든 프로젝트에 적용됩니다.",
+  "_comment_3": "프로젝트별로 다르게 하고 싶으면 프로젝트 루트의 .claude/settings.json에 두세요.",
+
+  "model": "opusplan",
+
+  "availableModels": [
+    "default",
+    "opusplan",
+    "opus",
+    "sonnet",
+    "haiku"
+  ],
+
+  "_comment_env": "환경변수 섹션 - 모델 버전 고정하고 싶을 때만 사용",
+  "env": {
+    "_comment_default_opus": "Anthropic API 직접 쓰면 주석 풀지 말것. Bedrock/Vertex에서 특정 버전 고정할 때만 사용",
+    "// ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-7",
+    "// ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6"
+  },
+
+  "_comment_usage": "사용법 1: 이 파일 저장 후 세션 시작하면 opusplan 자동 적용",
+  "_comment_usage2": "사용법 2: 세션 중 전환하려면 채팅창에 '/model opusplan' 입력",
+  "_comment_usage3": "사용법 3: 알려진 버그 - sonnet[1m]/opus[1m]/haiku에서 opusplan으로 바로 전환 안 됨. default 거쳐서 전환할 것",
+
+  "_comment_antigravity": "안티그래비티 Spark 플러그인 환경에서는 모델 드롭다운에 opusplan이 안 보일 수 있음. 이 경우 /model opusplan 명령어를 채팅창에 직접 입력하거나, 각 agents/*.md의 frontmatter에 model 명시(권장)"
+}

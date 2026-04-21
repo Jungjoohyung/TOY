@@ -1,38 +1,54 @@
 package com.toy.core.domain.performance.dto;
 
+import com.toy.core.domain.performance.BookingStatus;
 import com.toy.core.domain.performance.Concert;
 import com.toy.core.domain.performance.Performance;
+import com.toy.core.domain.performance.PerformanceSchedule;
 import com.toy.core.domain.performance.Sports;
 import lombok.Getter;
+
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Getter
-public class PerformanceResponse implements Serializable{
+public class PerformanceResponse implements Serializable {
 
     private Long id;
-    private String type;  // "CONCERT" or "SPORTS"
+    private String type;
     private String title;
-    
-    // 상세 정보 (값이 없으면 null)
-    private String description; // 가수 이름이나 팀 대진 정보를 퉁쳐서 보여줄 필드
+    private String description;
 
+    /** 예매 상태 (null: 스케줄 미등록) */
+    private BookingStatus bookingStatus;
+    private LocalDateTime bookingStartAt;
+    private LocalDateTime bookingEndAt;
+
+    /** 목록 조회용: 스케줄 없이 기본 정보만 */
     public PerformanceResponse(Performance entity) {
+        this(entity, null);
+    }
+
+    /** 예매 상태 포함 생성자. schedule 이 null 이면 bookingStatus 는 null */
+    public PerformanceResponse(Performance entity, PerformanceSchedule schedule) {
         this.id = entity.getId();
         this.title = entity.getTitle();
 
-        // 🌟 핵심: 부모(Performance)를 자식(Concert/Sports)으로 형변환해서 데이터 꺼내기
         if (entity instanceof Concert) {
             Concert c = (Concert) entity;
             this.type = "CONCERT";
             this.description = c.getArtist() + " (" + c.getGenre() + ")";
-        } 
-        else if (entity instanceof Sports) {
+        } else if (entity instanceof Sports) {
             Sports s = (Sports) entity;
             this.type = "SPORTS";
             this.description = s.getHomeTeam() + " vs " + s.getAwayTeam();
-        } 
-        else {
+        } else {
             this.type = "UNKNOWN";
+        }
+
+        if (schedule != null) {
+            this.bookingStatus = schedule.resolveStatus();
+            this.bookingStartAt = schedule.getBookingStartAt();
+            this.bookingEndAt = schedule.getBookingEndAt();
         }
     }
 }

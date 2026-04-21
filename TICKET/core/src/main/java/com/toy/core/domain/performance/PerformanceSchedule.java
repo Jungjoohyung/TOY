@@ -28,9 +28,30 @@ public class PerformanceSchedule {
     @Column(nullable = false)
     private LocalDateTime startDateTime;
 
+    /** 예매 오픈 시각 */
+    private LocalDateTime bookingStartAt;
+
+    /** 예매 마감 시각 */
+    private LocalDateTime bookingEndAt;
+
     @Builder
-    public PerformanceSchedule(Performance performance, LocalDateTime startDateTime) {
+    public PerformanceSchedule(Performance performance, LocalDateTime startDateTime,
+                               LocalDateTime bookingStartAt, LocalDateTime bookingEndAt) {
         this.performance = performance;
         this.startDateTime = startDateTime;
+        this.bookingStartAt = bookingStartAt;
+        this.bookingEndAt = bookingEndAt;
+    }
+
+    /**
+     * 현재 시각 기준으로 예매 상태를 계산한다.
+     * bookingStartAt 또는 bookingEndAt 이 null 이면 null 반환.
+     */
+    public BookingStatus resolveStatus() {
+        if (bookingStartAt == null || bookingEndAt == null) return null;
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(bookingStartAt)) return BookingStatus.UPCOMING;
+        if (now.isAfter(bookingEndAt)) return BookingStatus.CLOSED;
+        return BookingStatus.OPEN;
     }
 }

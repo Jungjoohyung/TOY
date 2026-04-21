@@ -57,10 +57,12 @@ public class InitDb implements CommandLineRunner {
                 .build();
         performanceRepository.save(sports);
 
-        // 스케줄 생성
+        // 스케줄 생성 (예매 어제 오픈, 공연 1시간 전 마감)
         PerformanceSchedule schedule = PerformanceSchedule.builder()
                 .performance(concert)
                 .startDateTime(LocalDateTime.now().plusDays(7).withHour(19).withMinute(0))
+                .bookingStartAt(LocalDateTime.now().minusDays(1).withHour(10).withMinute(0))
+                .bookingEndAt(LocalDateTime.now().plusDays(7).withHour(18).withMinute(0))
                 .build();
         scheduleRepository.save(schedule);
 

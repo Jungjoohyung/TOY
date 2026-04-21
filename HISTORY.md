@@ -82,6 +82,19 @@
   * **QueueScheduler 활성화 병목 해결**: 1000명의 유저(VU)가 접속했을 때 평균 처리 시간(`iteration_duration`)이 10초까지 지연되는 원인이 "1초에 200명씩 활성화시켰지만 ShedLock이 10초간 `lockAtLeastFor`를 점유하여 실제 10초에 한 번만 동작"했기 때문임을 파악했습니다. 스케줄러 락 점유 시간을 `10s -> 1s`로 하향 튜닝한 결과, 평균 소요 시간이 **10.11초 -> 3.6초**로 단축되고 시스템 총 처리량(TPS)이 **57회/초 -> 162회/초**로 3배 이상 폭발적으로 향상되는 성과를 거두었습니다.
   * **비즈니스 트랜잭션 경합 분석**: 병합률 테스트에서 `http_req_failed`가 6.13%(목표치 5% 초과)로 집계되었습니다. 하지만 분석 결과 5xx 장애가 아닌, 동시 다발적 1000명의 VU가 500개 좌석으로 집중되며 예약 경합에 밀린 유저들의 `409 Conflict (이미 선점된 좌석)` 정상 응답이었음을 확인했습니다. 이를 k6 `expectedStatuses(200, 409)` 로직으로 비즈니스 정상 예외 처리함으로써 1,000명의 극심한 부하 속에서도 **`http_req_failed: 0.00%`** 방어율과 **`p(95)=114.75ms`** 응답 속도를 기록하며 서버 생존을 완벽하게 증명했습니다.
 
+### [과제 7] 예매 상태 포함 공연 목록 조회 API 구현
+* **목표**: 인증 없이 누구나 접근 가능한 공연 목록 API에 예매 상태(UPCOMING/OPEN/CLOSED)를 추가해 사용자가 예매 가능 여부를 한눈에 파악할 수 있도록 개선.
+* **구현 내용**:
+  * **`BookingStatus` enum 신설**: `UPCOMING`(예매 예정), `OPEN`(예매 중), `CLOSED`(예매 종료) 3단계 상태를 정의하고, `PerformanceSchedule.resolveStatus()`에서 현재 시각 기준으로 계산.
+  * **`PerformanceSchedule` 스키마 확장**: 예매 오픈·마감 시각을 저장하는 `bookingStartAt`, `bookingEndAt` 컬럼 추가. 기존 `startDateTime`(공연 시작)과 분리하여 예매 기간을 독립적으로 관리.
+  * **`PerformanceResponse` 필드 추가**: 기존 단일 생성자를 유지하면서 `PerformanceSchedule`를 선택적으로 받는 오버로드 생성자 추가. `PerformanceDetailResponse`도 가장 이른 스케줄 기준으로 상태를 상속받도록 수정.
+  * **`PerformanceService` N+1 방지**: 기존의 `findAll()` 이후 개별 스케줄 조회 구조를 `findByPerformanceIdIn()` 단일 쿼리로 전환하고, 서비스 레이어에서 공연별 최소 `bookingStartAt` 기준 스케줄을 Map으로 집계하여 O(n) 처리.
+  * **캐시 제거**: `bookingStatus`가 시각에 따라 변하므로 기존 `@Cacheable("performances")` 어노테이션을 제거하여 항상 최신 상태를 반환하도록 변경.
+* **설계 결정**:
+  * 신규 엔드포인트 대신 기존 `GET /api/performances`를 확장하는 방향 채택. 동일 리소스에 필드 추가이므로 URL 분리 불필요.
+  * 상태를 DB 컬럼으로 저장하지 않고 서버에서 계산. 배치 상태 업데이트 없이 항상 정확한 상태 보장.
+  * `/api/performances/**`는 이미 `WebConfig`에서 JWT 인터셉터 제외 경로로 등록되어 있어 추가 처리 불필요.
+
 ---
 
 > 본 문서는 프로젝트 버전업이나 구조 변경 시 지속적으로 업데이트되어야 합니다.

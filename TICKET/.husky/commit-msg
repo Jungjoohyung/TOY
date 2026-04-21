@@ -1,0 +1,45 @@
+#!/usr/bin/env sh
+# ============================================================
+# commit-msg
+# 커밋 메시지 형식을 검사하는 훅
+# Conventional Commits 스타일 접두사를 강제합니다.
+# ============================================================
+
+# Husky 초기화 스크립트 로드
+. "$(dirname -- "$0")/_/husky.sh"
+
+# $1 에는 커밋 메시지가 담긴 파일 경로가 전달됩니다
+# (Git이 자동으로 .git/COMMIT_EDITMSG 같은 경로를 넣어줌)
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# 허용되는 접두사 목록 (정규식)
+# feat: 새 기능,  fix: 버그수정,  docs: 문서,
+# test: 테스트,   refactor: 리팩토링,  chore: 기타 작업
+ALLOWED_PREFIX="^(feat|fix|docs|test|refactor|chore)(\(.+\))?: .+"
+
+# 정규식 매칭 검사
+# grep -qE 는 "조용히(quiet) 확장(Extended) 정규식으로" 검사
+if ! echo "$COMMIT_MSG" | grep -qE "$ALLOWED_PREFIX"; then
+    echo ""
+    echo "에러: 커밋 메시지 형식이 올바르지 않습니다"
+    echo ""
+    echo "다음 형식을 지켜주세요:"
+    echo "  feat: 새 기능 설명"
+    echo "  fix: 버그 수정 내용"
+    echo "  docs: 문서 변경"
+    echo "  test: 테스트 추가/수정"
+    echo "  refactor: 코드 리팩토링"
+    echo "  chore: 빌드·설정 등 기타"
+    echo ""
+    echo "예시:"
+    echo "  feat: 사용자 로그인 기능 추가"
+    echo "  fix(auth): 토큰 만료 처리 버그 수정"
+    echo ""
+    echo "입력된 메시지:"
+    echo "  $COMMIT_MSG"
+    echo ""
+    exit 1
+fi
+
+echo "[commit-msg] 커밋 메시지 형식 통과"
